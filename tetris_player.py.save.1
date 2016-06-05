@@ -1,0 +1,151 @@
+from time import sleep
+from threading import Thread, Event
+from tetris import check_collision, join_matrixes, rotate_clockwise
+
+tetris_shapes = [
+        [[1, 1, 1],
+         [0, 1, 0]],
+
+        [[0, 2, 2],
+         [2, 2, 0]],
+
+        [[3, 3, 0],
+         [0, 3, 3]],
+
+        [[4, 0, 0],
+         [4, 4, 4]],
+
+        [[0, 0, 5],
+         [5, 5, 5]],
+
+        [[6, 6, 6, 6]],
+
+        [[7, 7],
+         [7, 7]]
+]
+
+class Column(list):
+	def __init__(self, col_list):
+		list.__init__(self, col_list)
+		self.height_gap = False
+		self.height = False
+		self.spaces = False
+
+	def __eq__(self, other_col_list):
+		return self == other_col_list
+
+	def calc_data(self, update=False):#calculates or updates data
+		if not self.height_gap or update:
+			self.calc_height_gap()
+		if not self.height or update:
+			self.height = len(self) - self.height_gap
+		if not self.spaces or update:
+			self.spaces = self.count(0) - self.height_gap
+		return self
+
+	def calc_height_gap(self):
+		for i,j in enumerate(self):
+			if j != 0:
+				self.height_gap = i
+				break
+
+class Board(list):
+	def __init__(self, board_list):
+		list.__init__(self, [Column(col).calc_data() for col in board_list])
+		self.max = False
+		self.average = False
+		self.mode = False
+		self.total_spaces = False
+	
+	def calc_data(self, update=False):
+		if not self.max or update:
+			self.max = max(self, key=lambda col:col.height)
+		if not self.average or update:
+			print self
+			self.average = reduce(lambda cola, colb:cola.height+colb.height, self)/len(self)
+		if not self.mode or update:
+			self.mode = max(set([col.height for col in self]), key=list.count)
+		if not self.total_spaces or update:
+			self.total_spaces = reduce(lambda cola, colb:cola.spaces+colb.spaces, self)
+		return self
+
+	def calc_col_data(self):
+		for col in self:
+			col.calc_data(True)
+
+	def slice_iter(self, width):#iterator that returns a "board" object
+		for col in range(len(self)-width):
+			yield Board(self[col:col+width]).calc_data()
+
+	def fake_add(self, x, piece):#takes a piece at an x coordinate and returns a board object with that piece "insta dropped"
+		#calc_instadrop height and location
+		#from tetris import check_collision, join_matrixes, rotate_clockwise
+		
+		#join the matrices
+		#return object
+
+class player_process(Thread):
+    rotations = {
+	6:1,
+	1:2,2:5,5:2,
+	0:4,3:4,4:4
+    }
+
+    def __init__(self, app):
+        Thread.__init__(self)
+	self.exit = Event()
+	self.app = app
+	self.pause = app.auto
+
+    def get_rotations(self, shape):
+	return player_process.rotations[tetris_shapes.index(shape)]	
+
+    def run(self):
+	debug = True
+	board = Board(zip(*self.app.board))
+	while not self.exit.is_set() and self.pause.wait():
+		if debug:
+			self.debug()
+		
+		board.calc_data()#update the data on the board
+
+		scores = {}
+		rotations = self.get_rotations(self.app.stone)
+		for rotation in range(rotations):#each rotation		
+			for slice in board.slice_iter(len(zip(*self.app.stone))):#each slice
+				
+				#add piece to slice
+				#add piece to board
+				
+				#calc_score of slice
+				#calc_score of board
+				
+				#remove piece from board
+				
+				#location, rotation, and score dict
+				pass
+		
+		#get the max of the moves
+		#rotate piece
+		#move piece
+		#instadrop
+		self.stone_x = int(cols / 2 - len(self.stone[0])/2)
+		
+		sleep(0.5)
+
+    def debug(self):
+	print "======DEBUG MODE======"
+	
+	print "BOARD"
+	for i in self.app.board:print i		
+
+	print "CURRENT PIECE"
+	for i in self.app.stone:print i
+
+	print "NEXT PIECE"
+	#for i in self.app.next_stone:print i
+
+    def shutdown(self):
+	print "ending process"
+        self.exit.set()
+	self.pause.set()
