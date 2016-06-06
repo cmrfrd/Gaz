@@ -179,6 +179,8 @@ class player_process(Thread):
 		
 	self.app.insta_drop()
 
+	sleep(0.01)
+
     def run(self):
 	debug = True
 	player_pieces_processed = 0
@@ -194,7 +196,7 @@ class player_process(Thread):
 		self.simple_play()
 		
 		player_pieces_processed += 1
-		sleep(0.5)
+		#sleep(0.5)
 	print "process has ended"
 
     def debug(self):

@@ -26,7 +26,7 @@ colors = [
 (50,  120, 52 ),
 (146, 202, 73 ),
 (150, 161, 218 ),
-(0,  0,  0) # Helper color for background grid
+(0,  0,  0)
 ]
 
 # Define the shapes of the single parts
@@ -86,7 +86,7 @@ def new_board():
 	return board
 
 class TetrisApp(object):
-	def __init__(self):
+	def __init__(self, start_auto=False, screen=True):
 		pygame.init()
 		pygame.key.set_repeat(250,25)
 
@@ -98,7 +98,12 @@ class TetrisApp(object):
 		self.default_font =  pygame.font.Font(
 			pygame.font.get_default_font(), 12)
 		
-		self.screen = pygame.display.set_mode((self.width, self.height))
+		if screen:
+			self.screen = pygame.display.set_mode((self.width, self.height))
+		else:
+			self.screen = None
+
+
 		pygame.event.set_blocked(pygame.MOUSEMOTION) # We do not need
 		                                             # mouse movement
 		                                             # events, so we
@@ -111,6 +116,8 @@ class TetrisApp(object):
 		self.player.start()
 		self.pieces_processed = 0
 		print "starting process"
+
+		if start_auto:self.flip()		
 	
 	def new_stone(self):
 		self.stone = self.next_stone[:]
@@ -200,8 +207,9 @@ class TetrisApp(object):
 		print "shutting down process"
 		self.player.shutdown()
 		self.auto.set()
-		self.center_msg("Exiting...")		
-		pygame.display.update()
+		if self.screen:
+			self.center_msg("Exiting...")		
+			pygame.display.update()
 		sys.exit()
 	
 	def drop(self, manual):
@@ -272,34 +280,70 @@ class TetrisApp(object):
 		self.paused = False
 		
 		dont_burn_my_cpu = pygame.time.Clock()
-		while 1:
-			self.screen.fill((0,0,0))
-			if self.gameover:
-				self.center_msg("""Game Over!\nYour score: %d
+
+		if self.screen:
+			while 1:
+				self.screen.fill((0,0,0))
+				if self.gameover:
+					self.center_msg("""Game Over!\nYour score: %d
 Press space to continue""" % self.score)
-			else:
-				if self.paused:
-					self.center_msg("Paused")
+					self.quit()
+					return self.pieces_processed
 				else:
-					pygame.draw.line(self.screen,
-						(255,255,255),
-						(self.rlim+1, 0),
-						(self.rlim+1, self.height-1))
-					self.disp_msg("Next:", (
-						self.rlim+cell_size,
-						2))
-					self.disp_msg("Score: %d\n\nLevel: %d\
-\nLines: %d" % (self.score, self.level, self.lines),
-						(self.rlim+cell_size, cell_size*5))
-					self.draw_matrix(self.bground_grid, (0,0))
-					self.draw_matrix(self.board, (0,0))
-					self.draw_matrix(self.stone,
-						(self.stone_x, self.stone_y))
-					self.draw_matrix(self.next_stone,
-						(cols+1,2))
-			pygame.display.update()
+					if self.paused:
+						self.center_msg("Paused")
+					else:
+						pygame.draw.line(self.screen,
+							(255,255,255),
+							(self.rlim+1, 0),
+							(self.rlim+1, self.height-1))
+						self.disp_msg("Next:", (
+							self.rlim+cell_size,
+							2))
+						self.disp_msg("Score: %d\n\nLevel: %d\
+							\nLines: %d" % (self.score, self.level, self.lines),
+							(self.rlim+cell_size, cell_size*5))
+						self.disp_msg("'Left Shift'\nfor Auto Play", (self.rlim + cell_size, cell_size * 10))
+
+						self.draw_matrix(self.bground_grid, (0,0))
+						self.draw_matrix(self.board, (0,0))
+						self.draw_matrix(self.stone,
+							(self.stone_x, self.stone_y))
+						self.draw_matrix(self.next_stone,
+							(cols+1,2))
+				pygame.display.update()
 			
-			if not self.auto.is_set():
+				if not self.auto.is_set():
+					for event in pygame.event.get():
+						if event.type == pygame.USEREVENT+1:
+							self.drop(False)
+						elif event.type == pygame.QUIT:
+							self.quit()
+						elif event.type == pygame.KEYDOWN:
+							for key in key_actions:
+								if event.key == eval("pygame.K_"
+								+key):
+									key_actions[key]()
+				else:
+					for event in pygame.event.get():
+						if event.type == pygame.USEREVENT+1:
+							self.drop(False)
+						elif event.type == pygame.QUIT:
+							self.quit()
+						elif event.type == pygame.KEYDOWN:
+							for key in key_actions:
+								if event.key == eval("pygame.K_"
+								+key) and (key == "LSHIFT" or key == "p" or key == "ESCAPE"):
+									key_actions[key]()
+								
+				dont_burn_my_cpu.tick(maxfps)
+
+		elif not self.screen:
+			self.auto.set()
+			while 1:
+				if self.gameover:
+					self.quit()
+					return self.pieces_processed			
 				for event in pygame.event.get():
 					if event.type == pygame.USEREVENT+1:
 						self.drop(False)
@@ -308,22 +352,19 @@ Press space to continue""" % self.score)
 					elif event.type == pygame.KEYDOWN:
 						for key in key_actions:
 							if event.key == eval("pygame.K_"
-							+key):
+							+key) and (key == "ESCAPE"):
 								key_actions[key]()
-			else:
-				for event in pygame.event.get():
-					if event.type == pygame.USEREVENT+1:
-						self.drop(False)
-					elif event.type == pygame.QUIT:
-						self.quit()
-					elif event.type == pygame.KEYDOWN:
-						for key in key_actions:
-							if event.key == eval("pygame.K_"
-							+key) and (key == "LSHIFT" or key == "p" or key == "ESCAPE"):
-								key_actions[key]()
-							
-			dont_burn_my_cpu.tick(maxfps)
+				dont_burn_my_cpu.tick(maxfps)
+
 
 if __name__ == '__main__':
-	App = TetrisApp()
+	print sys.argv
+	if len(sys.argv) <= 1:
+		auto = bool(int(raw_input("Auto: ")))
+		isscreen = bool(int(raw_input("Screen: ")))
+	else:
+		auto = bool(int(sys.argv[1]))
+		isscreen = bool(int(sys.argv[2]))
+
+	App = TetrisApp(start_auto=auto, screen=isscreen)
 	App.run()
