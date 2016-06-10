@@ -1,0 +1,38 @@
+#this script is used to test the different methods of autoplaying tetris
+import multiprocessing as mult
+import tetris
+from time import sleep
+
+class Tetris_Player_Worker(mult.Process):
+	def __init__(self, *args, **kwargs):
+		mult.Process.__init__(self, *args, **kwargs)
+		self.processed_pieces = 0
+	def run(self):
+		"""worker function that will play tetris in the background"""
+		App = tetris.TetrisApp(start_auto=True, screen=False)
+		self.processed_pieces = App.run()
+		App.quit()
+
+
+def tetris_player_process(a, i):
+	"""worker function that will play tetris in the background"""
+	App = tetris.TetrisApp(start_auto=True, screen=False)
+	processed_pieces = App.run()
+	print processed_pieces
+	a[i] = processed_pieces
+	App.quit()
+
+if __name__ == "__main__":
+	jobs = []
+	num = 20
+	a = mult.Array('i', range(num))
+
+	for p in range(num):
+		job = mult.Process(target=tetris_player_process, args=(a, p))
+		job.start()
+		jobs.append(job)
+	
+	while True in [job.is_alive() for job in jobs]:
+		sleep(1)
+
+	print a[:]

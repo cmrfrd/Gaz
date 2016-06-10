@@ -202,14 +202,13 @@ class TetrisApp(object):
 			                       (new_x, self.stone_y)):
 				self.stone_x = new_x
 	def quit(self):
-		print "PIECES: %d" % self.pieces_processed
-		print "ending game"
 		print "shutting down process"
 		self.player.shutdown()
 		self.auto.set()
 		if self.screen:
 			self.center_msg("Exiting...")		
 			pygame.display.update()
+		print "ending game"
 		sys.exit()
 	
 	def drop(self, manual):
@@ -287,7 +286,7 @@ class TetrisApp(object):
 				if self.gameover:
 					self.center_msg("""Game Over!\nYour score: %d
 Press space to continue""" % self.score)
-					self.quit()
+					#self.quit()
 					return self.pieces_processed
 				else:
 					if self.paused:
@@ -342,7 +341,7 @@ Press space to continue""" % self.score)
 			self.auto.set()
 			while 1:
 				if self.gameover:
-					self.quit()
+					#self.quit()					
 					return self.pieces_processed			
 				for event in pygame.event.get():
 					if event.type == pygame.USEREVENT+1:
@@ -368,3 +367,4 @@ if __name__ == '__main__':
 
 	App = TetrisApp(start_auto=auto, screen=isscreen)
 	App.run()
+	App.quit()

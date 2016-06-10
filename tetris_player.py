@@ -29,6 +29,10 @@ rotations_by_index = {#number of rotations manually by piece location above
 	0:4,3:4,4:4
 }
 
+def remove_row(board, row):
+        del board[row]
+        return [[0 for i in xrange(cols)]] + board
+
 def rotate_clockwise(shape):
         return [ [ shape[y][x]
                         for y in xrange(len(shape)) ]
@@ -88,6 +92,11 @@ class Board(list):
 		self.full_rows = False
 	
 	def calc_data(self, update=False):
+		if not self.full_rows or update:
+			if len(zip(*self)[0]) == 10:
+				self.full_rows = sum([1 if all(row) else 0 for row in zip(*self)])
+			else:
+				self.full_rows = 1
 		if not self.max or update:
 			self.max = max(col.height for col in self)
 		if not self.average or update:
@@ -97,11 +106,7 @@ class Board(list):
 			self.mode = max(heights, key=heights.count)
 		if not self.total_spaces or update:
 			self.total_spaces = sum(col.spaces for col in self)
-		if not self.full_rows or update:
-			if len(zip(*self)[0]) == 10:
-				self.full_rows = sum([1 if all(row) else 0 for row in zip(*self)])
-			else:
-				self.full_rows = 1
+
 		return self
 
 	def data(self):
@@ -179,7 +184,7 @@ class player_process(Thread):
 		
 	self.app.insta_drop()
 
-	sleep(0.01)
+	sleep(0.05)
 
     def run(self):
 	debug = True
