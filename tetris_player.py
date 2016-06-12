@@ -150,6 +150,9 @@ class Board(list):
 	def score(self):
 		return float(self.full_rows) / (self.max + self.min + self.average + self.mode + self.total_spaces + 1)
 
+	def score_2(self):
+		return float(self.full_rows) / ((self.max-self.min) + self.average + self.mode + self.total_spaces + 1)
+
 class player_process(Thread):
 	def __init__(self, app):
 		Thread.__init__(self)
@@ -185,7 +188,7 @@ class player_process(Thread):
 				board_with_piece = board.fake_add(slice_index, rotated_piece).calc_data()			
 
 				#without_score = slice_without_piece.score() + board_without_piece.score()
-				with_score = slice_with_piece.score() + board_with_piece.score()
+				with_score = slice_with_piece.score_2() + board_with_piece.score_2()
 				total_score = with_score
 
 				#for i in board_with_piece:print i
