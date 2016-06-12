@@ -357,10 +357,11 @@ Press space to continue""" % self.score)
 
 
 if __name__ == '__main__':
-	print sys.argv
+	print "1 = Yes"
+	print "0 = No"
 	if len(sys.argv) <= 1:
-		auto = bool(int(raw_input("Auto: ")))
-		isscreen = bool(int(raw_input("Screen: ")))
+		auto = bool(int(raw_input("Auto Mode: ")))
+		isscreen = bool(int(raw_input("Screen Visible: ")))
 	else:
 		auto = bool(int(sys.argv[1]))
 		isscreen = bool(int(sys.argv[2]))
