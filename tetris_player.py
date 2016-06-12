@@ -23,15 +23,14 @@ tetris_shapes = [
          [7, 7]]
 ]
 
+cols = 10
+rows = 22
+
 rotations_by_index = {#number of rotations manually by piece location above
 	6:1,
 	1:2,2:5,5:2,
 	0:4,3:4,4:4
 }
-
-def remove_row(board, row):
-        del board[row]
-        return [[0 for i in xrange(10)]] + board
 
 def rotate_clockwise(shape):
         return [ [ shape[y][x]
@@ -107,7 +106,7 @@ class Board(list):
 		if not self.full_rows or update:
 			self.full_rows = 1
 			row_board = self.invert()							#get the board in row format
-			if row_board[0] == 10:								#when the board isn't a slice
+			if row_board[0] == cols:							#when the board isn't a slice
 				for index, row in enumerate(row_board[:-1]):	#loop through each row
 					if all(row):								#if the row is complete
 						for col in self:col.remove_space(index)	#delete that space in each column
@@ -174,16 +173,16 @@ class player_process(Thread):
 		board = Board(zip(*self.app.board))
 		scores = {}
 
-		for rotated_stone in self.get_rotations(self.app.stone):#iter through each rotation
+		for rotated_piece in self.get_rotations(self.app.piece):#iter through each rotation
 
-			for slice_index, slice in board.slice_iter(len(zip(*rotated_stone))):#iter through each slice				
+			for slice_index, slice in board.slice_iter(len(zip(*rotated_piece))):#iter through each slice				
 
 				slice_without_piece = slice.calc_data()
 				board_without_piece = board.calc_data()	
 				#renaming for ease of use
 
-				slice_with_piece = slice.fake_add(0, rotated_stone).calc_data()
-				board_with_piece = board.fake_add(slice_index, rotated_stone).calc_data()			
+				slice_with_piece = slice.fake_add(0, rotated_piece).calc_data()
+				board_with_piece = board.fake_add(slice_index, rotated_piece).calc_data()			
 
 				#without_score = slice_without_piece.score() + board_without_piece.score()
 				with_score = slice_with_piece.score() + board_with_piece.score()
@@ -192,21 +191,21 @@ class player_process(Thread):
 				#for i in board_with_piece:print i
 				#board_with_piece.data()
 				#print total_score
-				#print (slice_index, rotated_stone)
+				#print (slice_index, rotated_piece)
 		
-				scores[total_score] = (slice_index, rotated_stone)
+				scores[total_score] = (slice_index, rotated_piece)
 			
 		best_move = scores[max(scores.keys())]
 			
-		while self.app.stone != best_move[1] and not self.app.gameover:
-			self.app.rotate_stone()
+		while self.app.piece != best_move[1] and not self.app.gameover:
+			self.app.rotate_piece()
 			
-		move_int = best_move[0] - self.app.stone_x
+		move_int = best_move[0] - self.app.piece_x
 		self.app.move(move_int)
 			
 		self.app.insta_drop()
 
-		sleep(0.1)
+		sleep(0.05)
 
 	def run(self):
 		debug = True
@@ -232,10 +231,10 @@ class player_process(Thread):
 		for i in self.app.board:print i		
 
 		print "CURRENT PIECE"
-		for i in self.app.stone:print i
+		for i in self.app.piece:print i
 
 		#print "NEXT PIECE"
-		#for i in self.app.next_stone:print i
+		#for i in self.app.next_piece:print i
 
 	def shutdown(self):
 		print "executing shutdown"
