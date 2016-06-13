@@ -56,6 +56,10 @@ def join_matrixes(mat1, mat2, mat2_off):
                         mat1[cy+off_y-1 ][cx+off_x] += val
         return mat1
 
+class Row(list):
+	def __init__(self, row_list):
+		list.__init__(self, row_list)
+		self.is_complete = all(row_list)
 
 class Column(list):
 	def __init__(self, col_list):
@@ -90,23 +94,44 @@ class Board(list):
 		self.mode = False
 		self.total_spaces = False
 		self.full_rows = False
-	
-	def calc_data(self, update=False):
-		if not self.full_rows or update:
-			if len(zip(*self)[0]) == 10:
-				self.full_rows = sum([1 if all(row) else 0 for row in zip(*self)])
+		self.is_cols = True
+
+	def invert(self, eq=False):
+		if eq:
+			if self.is_cols:
+				self = [Row(row) for row in zip(*self)]
 			else:
-				self.full_rows = 1
+				self = [Column(col) for col in zip(*self)]
+			self.is_cols = not self.is_cols
+		else:
+			if self.is_cols:
+				return [Row(row) for row in zip(*self)]
+			else:
+				return [Column(col) for col in zip(*self)]				
+		return self
+
+	def calc_data(self, update=False):
+
+		if not self.full_rows or update:
+			self.full_rows = 1
+			if len(zip(*self)[0]) == 10:
+				for index, row in enumerate(zip(*self)):
+					if all(row):
+						self.full_rows += 1
+						self.
+
 		if not self.max or update:
 			self.max = max(col.height for col in self)
+
 		if not self.average or update:
 			self.average = sum(col.height for col in self)/len(self)
+
 		if not self.mode or update:
 			heights = [col.height for col in self]
 			self.mode = max(heights, key=heights.count)
-		if not self.total_spaces or update:
-			self.total_spaces = sum(col.spaces for col in self)
 
+		if not self.total_spaces or update:
+			self.total_spaces = sum(col.calc_data(self.full_rows_locations, True).spaces for col in self)
 		return self
 
 	def data(self):
@@ -171,10 +196,18 @@ class player_process(Thread):
 			#without_score = slice_without_piece.score() + board_without_piece.score()
 			with_score = slice_with_piece.score() + board_with_piece.score()
 			total_score = with_score
+
+			for i in board_with_piece:print i
+			print board.data()
+			print total_score
 	
 			scores[total_score] = (slice_index, rotated_stone)
 		
 	best_move = scores[max(scores.keys())]
+
+	#for i in board:print i
+	#print max(scores.keys()), best_move
+	#print '\n'
 		
 	while self.app.stone != best_move[1] and not self.app.gameover:
 		self.app.rotate_stone()
@@ -184,7 +217,7 @@ class player_process(Thread):
 		
 	self.app.insta_drop()
 
-	sleep(0.05)
+	sleep(1)
 
     def run(self):
 	debug = True
