@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 # Control keys:
-#       Down - Drop stone faster
-# Left/Right - Move stone
-#         Up - Rotate Stone clockwise
+#       Down - Drop piece faster
+# Left/Right - Move piece
+#         Up - Rotate piece clockwise
 #     Escape - Quit game
 #          P - Pause game
 #     Return - Instant drfrom random import randrange as rand
@@ -10,6 +10,7 @@ import pygame, sys
 from threading import Event
 from tetris_player import player_process
 from random import randrange as rand
+import datetime
 
 # The configuration
 cell_size =	18
@@ -86,7 +87,7 @@ def new_board():
 	return board
 
 class TetrisApp(object):
-	def __init__(self, start_auto=False, screen=True):
+	def __init__(self, start_auto=False, screen=True, record=False):
 		pygame.init()
 		pygame.key.set_repeat(250,25)
 
@@ -103,12 +104,14 @@ class TetrisApp(object):
 		else:
 			self.screen = None
 
+		self.record = False
+		self.record_list = []
 
 		pygame.event.set_blocked(pygame.MOUSEMOTION) # We do not need
 		                                             # mouse movement
 		                                             # events, so we
 		                                             # block them.
-		self.next_stone = tetris_shapes[rand(len(tetris_shapes))]
+		self.next_piece = tetris_shapes[rand(len(tetris_shapes))]
 		self.init_game()
 
 		self.auto = Event()
@@ -119,21 +122,21 @@ class TetrisApp(object):
 
 		if start_auto:self.flip()		
 	
-	def new_stone(self):
-		self.stone = self.next_stone[:]
-		self.next_stone = tetris_shapes[rand(len(tetris_shapes))]
-		#self.next_stone = tetris_shapes[5]
-		self.stone_x = int(cols / 2 - len(self.stone[0])/2)
-		self.stone_y = 0
+	def new_piece(self):
+		self.piece = self.next_piece[:]
+		self.next_piece = tetris_shapes[rand(len(tetris_shapes))]
+		#self.next_piece = tetris_shapes[5]
+		self.piece_x = int(cols / 2 - len(self.piece[0])/2)
+		self.piece_y = 0
 		
 		if check_collision(self.board,
-		                   self.stone,
-		                   (self.stone_x, self.stone_y)):
+		                   self.piece,
+		                   (self.piece_x, self.piece_y)):
 			self.gameover = True
 	
 	def init_game(self):
 		self.board = new_board()
-		self.new_stone()
+		self.new_piece()
 		self.level = 1
 		self.score = 0
 		self.lines = 0
@@ -192,15 +195,15 @@ class TetrisApp(object):
 	
 	def move(self, delta_x):
 		if not self.gameover and not self.paused:
-			new_x = self.stone_x + delta_x
+			new_x = self.piece_x + delta_x
 			if new_x < 0:
 				new_x = 0
-			if new_x > cols - len(self.stone[0]):
-				new_x = cols - len(self.stone[0])
+			if new_x > cols - len(self.piece[0]):
+				new_x = cols - len(self.piece[0])
 			if not check_collision(self.board,
-			                       self.stone,
-			                       (new_x, self.stone_y)):
-				self.stone_x = new_x
+			                       self.piece,
+			                       (new_x, self.piece_y)):
+				self.piece_x = new_x
 	def quit(self):
 		print "shutting down process"
 		self.player.shutdown()
@@ -214,15 +217,15 @@ class TetrisApp(object):
 	def drop(self, manual):
 		if not self.gameover and not self.paused:
 			self.score += 1 if manual else 0
-			self.stone_y += 1
+			self.piece_y += 1
 			if check_collision(self.board,
-			                   self.stone,
-			                   (self.stone_x, self.stone_y)):
+			                   self.piece,
+			                   (self.piece_x, self.piece_y)):
 				self.board = join_matrixes(
 				  self.board,
-				  self.stone,
-				  (self.stone_x, self.stone_y))
-				self.new_stone()
+				  self.piece,
+				  (self.piece_x, self.piece_y))
+				self.new_piece()
 				cleared_rows = 0
 				while True:
 					for i, row in enumerate(self.board[:-1]):
@@ -243,13 +246,13 @@ class TetrisApp(object):
 			while(not self.drop(True)):
 				pass
 	
-	def rotate_stone(self):
+	def rotate_piece(self):
 		if not self.gameover and not self.paused:
-			new_stone = rotate_clockwise(self.stone)
+			new_piece = rotate_clockwise(self.piece)
 			if not check_collision(self.board,
-			                       new_stone,
-			                       (self.stone_x, self.stone_y)):
-				self.stone = new_stone
+			                       new_piece,
+			                       (self.piece_x, self.piece_y)):
+				self.piece = new_piece
 	
 	def toggle_pause(self):
 		self.paused = not self.paused
@@ -268,7 +271,7 @@ class TetrisApp(object):
 			'LEFT':		lambda:self.move(-1),
 			'RIGHT':	lambda:self.move(+1),
 			'DOWN':		lambda:self.drop(True),
-			'UP':		self.rotate_stone,
+			'UP':		self.rotate_piece,
 			'p':		self.toggle_pause,
 			's':	        self.start_game,
 			'SPACE':	self.insta_drop,
@@ -306,9 +309,9 @@ Press space to continue""" % self.score)
 
 						self.draw_matrix(self.bground_grid, (0,0))
 						self.draw_matrix(self.board, (0,0))
-						self.draw_matrix(self.stone,
-							(self.stone_x, self.stone_y))
-						self.draw_matrix(self.next_stone,
+						self.draw_matrix(self.piece,
+							(self.piece_x, self.piece_y))
+						self.draw_matrix(self.next_piece,
 							(cols+1,2))
 				pygame.display.update()
 			
@@ -357,14 +360,17 @@ Press space to continue""" % self.score)
 
 
 if __name__ == '__main__':
-	print sys.argv
-	if len(sys.argv) <= 1:
-		auto = bool(int(raw_input("Auto: ")))
-		isscreen = bool(int(raw_input("Screen: ")))
+	print "1 = Yes"
+	print "0 = No"
+	if len(sys.argv) <= 3:
+		auto = bool(int(raw_input("Auto Mode: ")))
+		isscreen = bool(int(raw_input("Screen Visible: ")))
+		record = bool(int(raw_input("Record Gameplay: ")))
 	else:
 		auto = bool(int(sys.argv[1]))
 		isscreen = bool(int(sys.argv[2]))
+		record = bool(int(sys.argv[3]))
 
-	App = TetrisApp(start_auto=auto, screen=isscreen)
+	App = TetrisApp(start_auto=auto, screen=isscreen, record=record)
 	App.run()
 	App.quit()
