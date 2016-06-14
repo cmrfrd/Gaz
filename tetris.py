@@ -11,6 +11,8 @@ from threading import Event
 from tetris_player import player_process
 from random import randrange as rand
 import datetime
+import csv
+import os
 
 # The configuration
 cell_size =	18
@@ -104,7 +106,7 @@ class TetrisApp(object):
 		else:
 			self.screen = None
 
-		self.record = False
+		self.record = record
 		self.record_list = []
 
 		pygame.event.set_blocked(pygame.MOUSEMOTION) # We do not need
@@ -204,6 +206,7 @@ class TetrisApp(object):
 			                       self.piece,
 			                       (new_x, self.piece_y)):
 				self.piece_x = new_x
+
 	def quit(self):
 		print "shutting down process"
 		self.player.shutdown()
@@ -211,7 +214,14 @@ class TetrisApp(object):
 		if self.screen:
 			self.center_msg("Exiting...")		
 			pygame.display.update()
+		if self.record:
+			filepath = "gameplays/" + str(datetime.datetime.today().toordinal()) + "-" + str(self.pieces_processed) + ".csv"
+			with open(filepath, "wb") as record_file:
+				csv_file_writer = csv.writer(record_file, delimiter=" ")
+				for play in self.record_list:
+					csv_file_writer.writerow(play)
 		print "ending game"
+		print "%d" % (self.pieces_processed)
 		sys.exit()
 	
 	def drop(self, manual):
@@ -225,6 +235,7 @@ class TetrisApp(object):
 				  self.board,
 				  self.piece,
 				  (self.piece_x, self.piece_y))
+				if self.record:self.record_list.append((self.piece_x, self.piece))
 				self.new_piece()
 				cleared_rows = 0
 				while True:
