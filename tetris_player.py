@@ -1,5 +1,6 @@
 from time import sleep
 from threading import Thread, Event
+from math import e
 
 tetris_shapes = [
         [[1, 1, 1],
@@ -71,8 +72,10 @@ class Column(list):
 		return self == other_col_list
 
 	def remove_space(self, index):
-		del self[index]
-		return [0] + self
+		if index in range(len(self)):
+			del self[index]
+			return [0] + self
+		return self
 
 	def calc_data(self, update=False):#calculates or updates data
 		if not self.height_gap or update:
@@ -106,9 +109,11 @@ class Board(list):
 		if not self.full_rows or update:
 			self.full_rows = 1
 			row_board = self.invert()							#get the board in row format
-			if row_board[0] == cols:							#when the board isn't a slice
+			if len(row_board[0]) == cols:							#when the board isn't a slice
+				#print "CORRECT SIZE"
 				for index, row in enumerate(row_board[:-1]):	#loop through each row
 					if all(row):								#if the row is complete
+						#print "COMPLETE ROW"
 						for col in self:col.remove_space(index)	#delete that space in each column
 						self.full_rows += 1 					#increment the number of rows
 		if not self.max or update:
@@ -147,17 +152,19 @@ class Board(list):
 				row_board_with_piece = join_matrixes(row_board, piece, (x, y))		#add the piece to the board
 				return Board(zip(*row_board_with_piece))							#return new Board in original format
 
-	def score(self):
-		return float(self.full_rows) / (self.max + self.min + self.average + self.mode + self.total_spaces + 1)
-
-	def score_2(self):
-		return float(self.full_rows) / ((self.max-self.min) + self.average + self.mode + self.total_spaces + 1)
-
 class player_process(Thread):
 	def __init__(self, app):
 		Thread.__init__(self)
 		self.exit = Event()
 		self.app = app
+
+	def slice_score(self, slice):return 0
+	def score(self, board):return float(board.full_rows) / (board.max + board.min + board.average + board.mode + board.total_spaces + 1)
+	def score_2(self, board):return (board.max + board.min + board.average + board.mode + board.total_spaces + 1) % board.full_rows
+
+	def bad_score(self, board):return board.full_rows * e**-(board.total_spaces + board.max + board.min + board.average + board.mode)
+	def bad_score_2(self, board):return ((board.max / (board.average + board.mode + board.total_spaces)) / board.min)
+	def bad_score_3(self, board):return float(board.full_rows) ** -(board.max + board.min + board.average + board.mode + board.total_spaces + 1)
 
 	def get_rotations(self, shape):#iter through each rotoation of a shape
 		shape = shape
@@ -175,7 +182,6 @@ class player_process(Thread):
 	def simple_play(self):
 		board = Board(zip(*self.app.board))
 		scores = {}
-
 		for rotated_piece in self.get_rotations(self.app.piece):#iter through each rotation
 
 			for slice_index, slice in board.slice_iter(len(zip(*rotated_piece))):#iter through each slice				
@@ -188,9 +194,11 @@ class player_process(Thread):
 				board_with_piece = board.fake_add(slice_index, rotated_piece).calc_data()			
 
 				#without_score = slice_without_piece.score() + board_without_piece.score()
-				with_score = slice_with_piece.score_2() + board_with_piece.score_2()
+				with_score = self.score_2(slice_with_piece) + self.score_2(board_with_piece)
 				total_score = with_score
 
+				#for i in board_without_piece:print i
+				#print '\n'
 				#for i in board_with_piece:print i
 				#board_with_piece.data()
 				#print total_score
@@ -208,7 +216,7 @@ class player_process(Thread):
 			
 		self.app.insta_drop()
 
-		sleep(0.05)
+		sleep(0.5)
 
 	def run(self):
 		debug = True

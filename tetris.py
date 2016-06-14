@@ -221,6 +221,7 @@ class TetrisApp(object):
 				for play in self.record_list:
 					csv_file_writer.writerow(play)
 		print "ending game"
+		print "%d" % (self.pieces_processed)
 		sys.exit()
 	
 	def drop(self, manual):
