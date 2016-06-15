@@ -13,8 +13,8 @@ def tetris_player_process(a, i):
 	App.quit()
 
 
-def all_jobs_finished(job_list):
-	return False in [job.is_alive() for job in job_list] 
+def a_job_is_alive(job_list):
+	return True in [job.is_alive() for job in job_list]
 
 if __name__ == "__main__":
 	batch_size = 0
@@ -44,7 +44,7 @@ if __name__ == "__main__":
 		jobs_list.append(job)
 		jobs -= 1	
 
-	while not all_jobs_finished(jobs_list) or jobs > 0:#while all the jobs are still alive and there are still more jobs
+	while jobs > 0 or a_job_is_alive(jobs_list):#while all the jobs are still alive and there are still more jobs
 		jobs_alive = [job.is_alive() for job in jobs_list]#get the jobs life status
 		if False in jobs_alive and jobs > 0:#if a job is finished and there are still jobs
 			print "Job finished, %d jobs left" % (jobs)

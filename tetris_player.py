@@ -27,7 +27,7 @@ tetris_shapes = [
 cols = 10
 rows = 22
 
-rotations_by_index = {#number of rotations manually by piece location above
+rotations_by_index = {#number of rotations by index of piece in tetris shapes
 	6:1,
 	1:2,2:5,5:2,
 	0:4,3:4,4:4
@@ -57,15 +57,9 @@ def join_matrixes(mat1, mat2, mat2_off):
         return mat1
 
 class Row(list):
-<<<<<<< HEAD
-	def __init__(self, row_list):
-		list.__init__(self, row_list)
-		self.is_complete = all(row_list)
-=======
 	def __init__(self, row):
 		list.__init__(self, row)
 		self.is_full = all(row)
->>>>>>> 08a36ab6bb09fc478b05efc3164ddcc245342cfc
 
 class Column(list):
 	def __init__(self, col_list):
@@ -107,37 +101,6 @@ class Board(list):
 		self.mode = False
 		self.total_spaces = False
 		self.full_rows = False
-<<<<<<< HEAD
-		self.is_cols = True
-
-	def invert(self, eq=False):
-		if eq:
-			if self.is_cols:
-				self = [Row(row) for row in zip(*self)]
-			else:
-				self = [Column(col) for col in zip(*self)]
-			self.is_cols = not self.is_cols
-		else:
-			if self.is_cols:
-				return [Row(row) for row in zip(*self)]
-			else:
-				return [Column(col) for col in zip(*self)]				
-		return self
-
-	def calc_data(self, update=False):
-
-		if not self.full_rows or update:
-			self.full_rows = 1
-			if len(zip(*self)[0]) == 10:
-				for index, row in enumerate(zip(*self)):
-					if all(row):
-						self.full_rows += 1
-						self.
-
-		if not self.max or update:
-			self.max = max(col.height for col in self)
-
-=======
 
 	def invert(self):
 		return [list(row) for row in zip(*self)]
@@ -147,26 +110,21 @@ class Board(list):
 			self.full_rows = 1
 			row_board = self.invert()							#get the board in row format
 			if len(row_board[0]) == cols:							#when the board isn't a slice
-				#print "CORRECT SIZE"
-				for index, row in enumerate(row_board[:-1]):	#loop through each row
-					if all(row):								#if the row is complete
-						#print "COMPLETE ROW"
-						for col in self:col.remove_space(index)	#delete that space in each column
+				for index, row in enumerate(row_board[:-1]):				#loop through each row
+					if all(row):							#if the row is complete
+						for col in self:col.remove_space(index)			#delete that space in each column
 						self.full_rows += 1 					#increment the number of rows
 		if not self.max or update:
 			self.max = max(col.height for col in self)
 		if not self.min or update:
 			self.min = min(col.height for col in self)
->>>>>>> 08a36ab6bb09fc478b05efc3164ddcc245342cfc
 		if not self.average or update:
 			self.average = sum(col.height for col in self)/len(self)
-
 		if not self.mode or update:
 			heights = [col.height for col in self]
 			self.mode = max(heights, key=heights.count)
-
 		if not self.total_spaces or update:
-			self.total_spaces = sum(col.calc_data(self.full_rows_locations, True).spaces for col in self)
+			self.total_spaces = sum(col.spaces for col in self)
 		return self
 
 	def data(self):
@@ -185,83 +143,13 @@ class Board(list):
 			yield (col, Board(self[col:col+width][:]))
 
 	def fake_add(self, x, piece):#takes a piece at an x coordinate and returns a board object with that piece "insta dropped"
-		row_board = self.invert()													#get the board in col format
-		for y in range(1, len(row_board)):											#loop through index's of row_board
-			if check_collision(row_board, piece, (x, y)):							#if there is a collision at "y"
+		row_board = self.invert()								#get the board in col format
+		for y in range(1, len(row_board)):							#loop through index's of row_board
+			if check_collision(row_board, piece, (x, y)):					#if there is a collision at "y"
 				row_board_with_piece = join_matrixes(row_board, piece, (x, y))		#add the piece to the board
-				return Board(zip(*row_board_with_piece))							#return new Board in original format
+				return Board(zip(*row_board_with_piece))				#return new Board in original format
 
 class player_process(Thread):
-<<<<<<< HEAD
-    def __init__(self, app):
-        Thread.__init__(self)
-	self.exit = Event()
-	self.app = app
-
-    def get_rotations(self, shape):#iter through each rotoation of a shape
-	shape = shape
-	for r in range(3):
-	 	try:
-			rotations = rotations_by_index[tetris_shapes.index(shape)]#gets the number of rotations manually
-		except ValueError:
-			shape = rotate_clockwise(shape)
-
-	rotated_shape = shape
-	for r in range(rotations):
-		rotated_shape = rotate_clockwise(rotated_shape)
-		yield rotated_shape
-
-    def simple_play(self):
-	board = Board(zip(*self.app.board))
-	scores = {}
-
-	for rotated_stone in self.get_rotations(self.app.stone):#iter through each rotation
-
-		for slice_index, slice in board.slice_iter(len(zip(*rotated_stone))):#iter through each slice				
-
-			slice_without_piece = slice.calc_data()
-			board_without_piece = board.calc_data()	
-			#renaming for ease of use
-
-			slice_with_piece = slice.fake_add(0, rotated_stone).calc_data()
-			board_with_piece = board.fake_add(slice_index, rotated_stone).calc_data()			
-
-			#without_score = slice_without_piece.score() + board_without_piece.score()
-			with_score = slice_with_piece.score() + board_with_piece.score()
-			total_score = with_score
-
-			for i in board_with_piece:print i
-			print board.data()
-			print total_score
-	
-			scores[total_score] = (slice_index, rotated_stone)
-		
-	best_move = scores[max(scores.keys())]
-
-	#for i in board:print i
-	#print max(scores.keys()), best_move
-	#print '\n'
-		
-	while self.app.stone != best_move[1] and not self.app.gameover:
-		self.app.rotate_stone()
-		
-	move_int = best_move[0] - self.app.stone_x
-	self.app.move(move_int)
-		
-	self.app.insta_drop()
-
-	sleep(1)
-
-    def run(self):
-	debug = True
-	player_pieces_processed = 0
-
-	while not self.exit.is_set() and self.app.auto.wait():
-		
-		#this statement is to make sure each piece is only processed once
-		#compares the number of pieces processed by the game and by the player
-		if self.app.pieces_processed != player_pieces_processed:
-=======
 	def __init__(self, app):
 		Thread.__init__(self)
 		self.exit = Event()
@@ -269,11 +157,12 @@ class player_process(Thread):
 
 	def slice_score(self, slice):return 0
 	def score(self, board):return float(board.full_rows) / (board.max + board.min + board.average + board.mode + board.total_spaces + 1)
-	def score_2(self, board):return (board.max + board.min + board.average + board.mode + board.total_spaces + 1) % board.full_rows
+	def score_2(self, board):return float(board.full_rows) - board.max - (board.total_spaces) + 1
 
 	def bad_score(self, board):return board.full_rows * e**-(board.total_spaces + board.max + board.min + board.average + board.mode)
 	def bad_score_2(self, board):return ((board.max / (board.average + board.mode + board.total_spaces)) / board.min)
 	def bad_score_3(self, board):return float(board.full_rows) ** -(board.max + board.min + board.average + board.mode + board.total_spaces + 1)
+	def bad_score_4(self, board):return (board.max + board.min + board.average + board.mode + board.total_spaces + 1) % board.full_rows
 
 	def get_rotations(self, shape):#iter through each rotoation of a shape
 		shape = shape
@@ -325,7 +214,7 @@ class player_process(Thread):
 			
 		self.app.insta_drop()
 
-		sleep(0.5)
+		sleep(0.01)
 
 	def run(self):
 		debug = True
@@ -341,9 +230,7 @@ class player_process(Thread):
 			
 			self.simple_play()
 			
->>>>>>> 08a36ab6bb09fc478b05efc3164ddcc245342cfc
 			player_pieces_processed += 1
-			#sleep(0.5)
 		print "process has ended"
 
 	def debug(self):
