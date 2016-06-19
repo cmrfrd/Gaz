@@ -101,19 +101,29 @@ class Board(list):
 		self.mode = False
 		self.total_spaces = False
 		self.full_rows = False
+		self.row_completeness = False
 
 	def invert(self):
 		return [list(row) for row in zip(*self)]
 	
 	def calc_data(self, update=False):		
-		if not self.full_rows or update:
+		if not self.full_rows or self.row_completeness or update:
 			self.full_rows = 1
+			self.row_completeness = 1
+
 			row_board = self.invert()							#get the board in row format
 			if len(row_board[0]) == cols:							#when the board isn't a slice
-				for index, row in enumerate(row_board[:-1]):				#loop through each row
+				for index, row in enumerate(row_board[:-1:-1]):				#loop through each row bottom first
+
+					perc_complete = float(len(row) - row.count(0)) / len(row)       #get the percent complete of the row
+					row_complete = perc_complete / (index + 1)                      #the lower the row is more complete the higher the score
+					self.row_completeness += row_complete
+
 					if all(row):							#if the row is complete
 						for col in self:col.remove_space(index)			#delete that space in each column
 						self.full_rows += 1 					#increment the number of rows
+				self.row_completeness /= rows
+					
 		if not self.max or update:
 			self.max = max(col.height for col in self)
 		if not self.min or update:
@@ -133,17 +143,21 @@ class Board(list):
 		print "Mode: %d" % (self.mode)
 		print "Spaces: %d" % (self.total_spaces)
 		print "Rows: %d" % (self.full_rows)
+		print "Comp: %f" % (self.row_completeness)
 
 	def calc_col_data(self):
 		for col in self:
 			col.calc_data(True)
 
 	def slice_iter(self, width):#iterator that returns a "board" object
-		for col in range(len(self)-width+1):
+		for col in range(0, len(self) - width + 1):
 			yield (col, Board(self[col:col+width][:]))
 
 	def fake_add(self, x, piece):#takes a piece at an x coordinate and returns a board object with that piece "insta dropped"
 		row_board = self.invert()								#get the board in col format
+ 
+		assert x in [0]+range(len(self) - len(zip(*piece)) + 1)					#make x coord is within bounds
+		
 		for y in range(1, len(row_board)):							#loop through index's of row_board
 			if check_collision(row_board, piece, (x, y)):					#if there is a collision at "y"
 				row_board_with_piece = join_matrixes(row_board, piece, (x, y))		#add the piece to the board
@@ -157,12 +171,22 @@ class player_process(Thread):
 
 	def slice_score(self, slice):return 0
 	def score(self, board):return float(board.full_rows) / (board.max + board.min + board.average + board.mode + board.total_spaces + 1)
-	def score_2(self, board):return float(board.full_rows) - board.max - (board.total_spaces) + 1
+	def score_2(self, board):
+		range = board.max - board.min + 1
+
+		result = float(board.row_completeness) * board.full_rows
+		result /= range
+		result /= (board.total_spaces+1)
+		result /= board.average
+		#print result
+		return result
 
 	def bad_score(self, board):return board.full_rows * e**-(board.total_spaces + board.max + board.min + board.average + board.mode)
 	def bad_score_2(self, board):return ((board.max / (board.average + board.mode + board.total_spaces)) / board.min)
 	def bad_score_3(self, board):return float(board.full_rows) ** -(board.max + board.min + board.average + board.mode + board.total_spaces + 1)
 	def bad_score_4(self, board):return (board.max + board.min + board.average + board.mode + board.total_spaces + 1) % board.full_rows
+	def bad_score_5(self, board):return (float(board.min)/board.max) * (board.full_rows/(board.total_spaces+1))
+	def bad_score_6(self, board):return (board.min/float(board.max)) * (board.mode/board.average) * (board.full_rows/(float(board.total_spaces)+1))
 
 	def get_rotations(self, shape):#iter through each rotoation of a shape
 		shape = shape
@@ -191,16 +215,16 @@ class player_process(Thread):
 				slice_with_piece = slice.fake_add(0, rotated_piece).calc_data()
 				board_with_piece = board.fake_add(slice_index, rotated_piece).calc_data()			
 
-				#without_score = slice_without_piece.score() + board_without_piece.score()
+				#without_score = self.score_2(slice_without_piece) + self.score_2(board_without_piece)
 				with_score = self.score_2(slice_with_piece) + self.score_2(board_with_piece)
-				total_score = with_score
+				total_score = with_score #- without_score
 
-				#for i in board_without_piece:print i
-				#print '\n'
-				#for i in board_with_piece:print i
-				#board_with_piece.data()
-				#print total_score
-				#print (slice_index, rotated_piece)
+				'''for i in board_without_piece:print i
+				print '\n'
+				for i in board_with_piece:print i
+				board_with_piece.data()
+				print total_score
+				print (slice_index, rotated_piece)'''
 		
 				scores[total_score] = (slice_index, rotated_piece)
 			
@@ -215,12 +239,13 @@ class player_process(Thread):
 		self.app.insta_drop()
 
 		sleep(0.01)
+		return True
 
 	def run(self):
 		debug = True
 		player_pieces_processed = 0
 
-		while not self.exit.is_set() and self.app.auto.wait():
+		while not self.exit.is_set() and self.app.auto.wait() and not self.app.gameover:
 			
 			#this statement is to make sure each piece is only processed once
 			#compares the number of pieces processed by the game and by the player
@@ -228,9 +253,9 @@ class player_process(Thread):
 				player_pieces_processed += 1
 				continue
 			
-			self.simple_play()
-			
-			player_pieces_processed += 1
+			if self.simple_play():
+				player_pieces_processed += 1
+
 		print "process has ended"
 
 	def debug(self):

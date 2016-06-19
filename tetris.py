@@ -215,7 +215,7 @@ class TetrisApp(object):
 			self.center_msg("Exiting...")		
 			pygame.display.update()
 		if self.record:
-			filepath = "gameplays/" + str(datetime.datetime.today().toordinal()) + "-" + str(self.pieces_processed) + ".csv"
+			filepath = "gameplays/" + datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + "-" + str(self.pieces_processed) + ".csv"
 			with open(filepath, "wb") as record_file:
 				csv_file_writer = csv.writer(record_file, delimiter=" ")
 				for play in self.record_list:
