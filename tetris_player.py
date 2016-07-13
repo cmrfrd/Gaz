@@ -250,7 +250,7 @@ class player_process(Thread):
 		reader.feature_scale_data()
 
 		while not self.exit.is_set() and self.app.auto.wait() and not self.app.gameover:
-			current_state_vector = reader.feature_dict_from_board( Board(zip(*self.app.board)) ).values()
+			current_state_vector = reader.feature_dict_from_board( zip(*self.app.board) ).values()
 			yield k_nearest_neighbors(k, reader.dataset, self.app.piece_num, current_state_vector)
 
 	def execute_move(self, move, time=0.01):
@@ -272,7 +272,7 @@ class player_process(Thread):
 		player_pieces_processed = 0
 
 		#To implement KNN uncomment line below as well as KNN line in while loop
-		KNN_mover = self.best_move_by_KNN(tetris_shapes, Board([]))
+		KNN_mover = self.best_move_by_KNN(tetris_shapes, Board)
 
 		while not self.exit.is_set() and self.app.auto.wait() and not self.app.gameover:
 			
@@ -283,10 +283,11 @@ class player_process(Thread):
 				continue
 			
 			#to have player think only one move ahead with one simple heuristic uncomment line below
-			move = self.find_best_scored_move(Board(zip(*self.app.board)), self.app.piece, self.score, 0.001)
+			#move = self.find_best_scored_move(Board(zip(*self.app.board)), self.app.piece, self.score, 0.001)
 
 			#to use KNN uncomment this line as well as instantiation of iterator before while loop
 			move = KNN_mover.next()
+			print move
 
 			if self.execute_move(move):
 				player_pieces_processed += 1

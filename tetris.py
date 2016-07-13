@@ -13,6 +13,7 @@ from random import randrange as rand
 import datetime
 import csv
 import os
+from copy import deepcopy
 
 # The configuration
 cell_size =	18
@@ -107,7 +108,7 @@ class TetrisApp(object):
 			self.screen = None
 
 		self.record = record
-		self.record_list = []
+     		self.record_list = []
 
 		pygame.event.set_blocked(pygame.MOUSEMOTION) # We do not need
 		                                             # mouse movement
@@ -216,7 +217,7 @@ class TetrisApp(object):
 		if self.screen:
 			self.center_msg("Exiting...")		
 			pygame.display.update()
-		if self.record and self.pieces_processed > 200:
+		if self.record and self.pieces_processed > 150:
 			filepath = "gameplays/" + datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + "-" + str(self.pieces_processed) + ".csv"
 			with open(filepath, "wb") as record_file:
 				csv_file_writer = csv.writer(record_file, delimiter=":")
@@ -237,7 +238,7 @@ class TetrisApp(object):
 				  self.board,
 				  self.piece,
 				  (self.piece_x, self.piece_y))
-				if self.record:self.record_list.append((self.piece_x, (self.piece, self.piece_num), self.rotation, self.board))
+				if self.record:self.record_list.append((self.piece_x, (self.piece, self.piece_num), self.rotation, deepcopy(self.board)))
 				self.new_piece()
 				cleared_rows = 0
 				while True:

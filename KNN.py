@@ -13,7 +13,7 @@ def feature_scale(feature, f_max=None, f_min=None):
 	'''feature scale a single value given a max and min
 	'''
 	assert f_max != None or f_min != None
-	return (feature - f_min)/(f_max - f_min)
+	return (float(feature) - f_min)/(f_max - f_min)
 
 def feature_scale_list(features, f_max=None, f_min=None):
 	'''This func will normalize a list of features to fin in [0,1]
@@ -28,7 +28,7 @@ def euclidian_distance(v1, v2):
 	'''
 	distance = 0
 	for a, b in zip(v1, v2):
-		distance += (a - b) ** 2
+		distance += float(a - b) ** 2
 	return sqrt(distance)
 
 def k_nearest_neighbors(k, dataset, model_choice, new_vect):
@@ -55,19 +55,18 @@ class Game_Reader(object):
 		self.gameplay_files = [file for file in glob.glob(dir + "*.csv")];
 		self.sample_board = board;
 		self.pieces = pieces;
-		self.dataset = {}
+		self.dataset = OrderedDict()
 
         def feature_dict_from_board(self, board_list):
 		'''returns a long vector of features from a board
 		'''
-    	        self.sample_board.__init__(board_list)
-		self.sample_board.calc_data()
-		cols = self.sample_board[:]
-	
-		feature_dict = self.sample_board.__dict__
+    	        board = self.sample_board(board_list)
+		board.calc_data()
 
-		for index, col in enumerate(self.sample_board):
-			feature_dict["col" + str(index)] = col.height
+		feature_dict = OrderedDict(board.__dict__)
+
+		for index, col in enumerate(board):
+			feature_dict["col" + str(index)] = col.calc_data().height
 
 		return feature_dict
 
@@ -109,13 +108,13 @@ class Game_Reader(object):
 			moves.next()
 
 			#iterate through each move and create dict dataset based on information
-			for move in moves:
+			for index, move in enumerate(moves):
 
                                 #look at csv data to see ordering of information
 				model = ast.literal_eval(move[1])[1]
 				classification = (ast.literal_eval(move[0]), ast.literal_eval(move[2]))
 				features = self.feature_dict_from_board(zip(*ast.literal_eval(move[3])))
-				
+
 				try:
 					self.dataset[model]
 					try:
@@ -156,8 +155,4 @@ class Game_Reader(object):
 						max_feature = feature_dict[feature]['max']
 						min_feature = feature_dict[feature]['min']
 						self.dataset[model][classification][feature_val_index][feature] = feature_scale(value, max_feature, min_feature)
-		return self.dataset		
-
-if __name__ == "__main__":
-	
-	a = Game_Reader(tetris_shapes, Board)
+		return self.dataset
