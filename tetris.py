@@ -113,20 +113,22 @@ class TetrisApp(object):
 		                                             # mouse movement
 		                                             # events, so we
 		                                             # block them.
-		self.next_piece = tetris_shapes[rand(len(tetris_shapes))]
+		self.piece_num = rand(len(tetris_shapes))
+		self.next_piece = tetris_shapes[self.piece_num]
+
 		self.init_game()
 
 		self.auto = Event()
 		self.player = player_process(self)
-		self.player.start()
 		self.pieces_processed = 0
-		print "starting process"
+		self.rotation = 0
 
 		if start_auto:self.flip()		
 	
 	def new_piece(self):
 		self.piece = self.next_piece[:]
-		self.next_piece = tetris_shapes[rand(len(tetris_shapes))]
+		self.piece_num = rand(len(tetris_shapes))
+		self.next_piece = tetris_shapes[self.piece_num]
 		#self.next_piece = tetris_shapes[5]
 		self.piece_x = int(cols / 2 - len(self.piece[0])/2)
 		self.piece_y = 0
@@ -214,10 +216,10 @@ class TetrisApp(object):
 		if self.screen:
 			self.center_msg("Exiting...")		
 			pygame.display.update()
-		if self.record:
+		if self.record and self.pieces_processed > 200:
 			filepath = "gameplays/" + datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + "-" + str(self.pieces_processed) + ".csv"
 			with open(filepath, "wb") as record_file:
-				csv_file_writer = csv.writer(record_file, delimiter=" ")
+				csv_file_writer = csv.writer(record_file, delimiter=":")
 				for play in self.record_list:
 					csv_file_writer.writerow(play)
 		print "ending game"
@@ -235,7 +237,7 @@ class TetrisApp(object):
 				  self.board,
 				  self.piece,
 				  (self.piece_x, self.piece_y))
-				if self.record:self.record_list.append((self.piece_x, self.piece))
+				if self.record:self.record_list.append((self.piece_x, (self.piece, self.piece_num), self.rotation, self.board))
 				self.new_piece()
 				cleared_rows = 0
 				while True:
@@ -249,6 +251,7 @@ class TetrisApp(object):
 						break
 				self.add_cl_lines(cleared_rows)
 				self.pieces_processed +=1
+				self.rotation = 0
 				return True
 		return False
 	
@@ -263,6 +266,10 @@ class TetrisApp(object):
 			if not check_collision(self.board,
 			                       new_piece,
 			                       (self.piece_x, self.piece_y)):
+
+				if new_piece in tetris_shapes:self.rotation = 0 
+				else: self.rotation += 1
+
 				self.piece = new_piece
 	
 	def toggle_pause(self):
@@ -291,6 +298,9 @@ class TetrisApp(object):
 		
 		self.gameover = False
 		self.paused = False
+
+		self.player.start()
+		print "starting process"
 		
 		dont_burn_my_cpu = pygame.time.Clock()
 

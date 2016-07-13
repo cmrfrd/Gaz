@@ -1,5 +1,6 @@
 from time import sleep
 from threading import Thread, Event
+from KNN import Game_Reader, k_nearest_neighbors
 from math import e
 
 tetris_shapes = [
@@ -94,7 +95,11 @@ class Column(list):
 
 class Board(list):
 	def __init__(self, board_list):
-		list.__init__(self, [Column(col).calc_data() for col in board_list])
+		if isinstance(board_list, Board):
+			self = board_list
+		else:
+			list.__init__(self, [Column(col).calc_data() for col in board_list])
+
 		self.max = False
 		self.min = False
 		self.average = False
@@ -118,10 +123,12 @@ class Board(list):
 					perc_complete = float(len(row) - row.count(0)) / len(row)       #get the percent complete of the row
 					row_complete = perc_complete / (index + 1)                      #the lower the row is more complete the higher the score
 					self.row_completeness += row_complete
-
+				
+				for index, row in enumerate(row_board[:-1:-1]):
 					if all(row):							#if the row is complete
 						for col in self:col.remove_space(index)			#delete that space in each column
 						self.full_rows += 1 					#increment the number of rows
+
 				self.row_completeness /= rows
 					
 		if not self.max or update:
@@ -150,6 +157,9 @@ class Board(list):
 			col.calc_data(True)
 
 	def slice_iter(self, width):#iterator that returns a "board" object
+
+		assert 1 <= width <= len(self)
+
 		for col in range(0, len(self) - width + 1):
 			yield (col, Board(self[col:col+width][:]))
 
@@ -170,16 +180,9 @@ class player_process(Thread):
 		self.app = app
 
 	def slice_score(self, slice):return 0
-	def score(self, board):return float(board.full_rows) / (board.max + board.min + board.average + board.mode + board.total_spaces + 1)
+	def score(self, board):return (float(board.full_rows)) / (board.max + board.min + board.average + board.mode + board.total_spaces + 1)
 	def score_2(self, board):
-		range = board.max - board.min + 1
-
-		result = float(board.row_completeness) * board.full_rows
-		result /= range
-		result /= (board.total_spaces+1)
-		result /= board.average
-		#print result
-		return result
+		return board.row_completeness
 
 	def bad_score(self, board):return board.full_rows * e**-(board.total_spaces + board.max + board.min + board.average + board.mode)
 	def bad_score_2(self, board):return ((board.max / (board.average + board.mode + board.total_spaces)) / board.min)
@@ -188,23 +191,31 @@ class player_process(Thread):
 	def bad_score_5(self, board):return (float(board.min)/board.max) * (board.full_rows/(board.total_spaces+1))
 	def bad_score_6(self, board):return (board.min/float(board.max)) * (board.mode/board.average) * (board.full_rows/(float(board.total_spaces)+1))
 
-	def get_rotations(self, shape):#iter through each rotoation of a shape
-		shape = shape
+	def get_piece_index(self, shape):
+		'''Since tetris piece variables are morphed in place, we need to keep rotating them to get their index
+		'''
+		rotations = 0
+		index = -1
 		for r in range(3):
-		 	try:
-				rotations = rotations_by_index[tetris_shapes.index(shape)]#gets the number of rotations manually
+			try:
+				index = tetris_shapes.index(shape)
 			except ValueError:
 				shape = rotate_clockwise(shape)
+		return index
 
+	def get_rotations(self, shape):#iter through each rotoation of a shape
+		#shape = shape
+		rotations = 0
+		rotations = rotations_by_index[self.get_piece_index(shape)]#gets the number of rotations manually
+		
 		rotated_shape = shape
 		for r in range(rotations):
 			rotated_shape = rotate_clockwise(rotated_shape)
 			yield rotated_shape
 
-	def simple_play(self):
-		board = Board(zip(*self.app.board))
+	def find_best_scored_move(self, board, piece, score_func, time=0.5):
 		scores = {}
-		for rotated_piece in self.get_rotations(self.app.piece):#iter through each rotation
+		for rotated_piece in self.get_rotations(piece):#iter through each rotation
 
 			for slice_index, slice in board.slice_iter(len(zip(*rotated_piece))):#iter through each slice				
 
@@ -214,11 +225,12 @@ class player_process(Thread):
 
 				slice_with_piece = slice.fake_add(0, rotated_piece).calc_data()
 				board_with_piece = board.fake_add(slice_index, rotated_piece).calc_data()			
+				#add the piece to the boards
 
-				#without_score = self.score_2(slice_without_piece) + self.score_2(board_without_piece)
-				with_score = self.score_2(slice_with_piece) + self.score_2(board_with_piece)
-				total_score = with_score #- without_score
+				total_score = score_func(slice_with_piece) + score_func(board_with_piece)
 
+				#print board_without_piece
+				#print '\n'
 				'''for i in board_without_piece:print i
 				print '\n'
 				for i in board_with_piece:print i
@@ -229,21 +241,38 @@ class player_process(Thread):
 				scores[total_score] = (slice_index, rotated_piece)
 			
 		best_move = scores[max(scores.keys())]
-			
-		while self.app.piece != best_move[1] and not self.app.gameover:
+		sleep(time)
+		return best_move
+
+	def best_move_by_KNN(self, pieces, board, games=10, k=5):
+		reader = Game_Reader(pieces, board)
+		reader.read_games(games)
+		reader.feature_scale_data()
+
+		while not self.exit.is_set() and self.app.auto.wait() and not self.app.gameover:
+			current_state_vector = reader.feature_dict_from_board( Board(zip(*self.app.board)) ).values()
+			yield k_nearest_neighbors(k, reader.dataset, self.app.piece_num, current_state_vector)
+
+	def execute_move(self, move, time=0.01):
+		'''executes move based on tuple (rotation, x_coord)
+		'''
+		while self.app.piece != move[1] and not self.app.gameover:
 			self.app.rotate_piece()
 			
-		move_int = best_move[0] - self.app.piece_x
+		move_int = move[0] - self.app.piece_x
 		self.app.move(move_int)
 			
 		self.app.insta_drop()
 
-		sleep(0.01)
+		sleep(time)
 		return True
 
 	def run(self):
 		debug = True
 		player_pieces_processed = 0
+
+		#To implement KNN uncomment line below as well as KNN line in while loop
+		KNN_mover = self.best_move_by_KNN(tetris_shapes, Board([]))
 
 		while not self.exit.is_set() and self.app.auto.wait() and not self.app.gameover:
 			
@@ -253,9 +282,14 @@ class player_process(Thread):
 				player_pieces_processed += 1
 				continue
 			
-			if self.simple_play():
-				player_pieces_processed += 1
+			#to have player think only one move ahead with one simple heuristic uncomment line below
+			move = self.find_best_scored_move(Board(zip(*self.app.board)), self.app.piece, self.score, 0.001)
 
+			#to use KNN uncomment this line as well as instantiation of iterator before while loop
+			move = KNN_mover.next()
+
+			if self.execute_move(move):
+				player_pieces_processed += 1
 		print "process has ended"
 
 	def debug(self):
