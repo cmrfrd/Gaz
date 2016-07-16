@@ -52,12 +52,55 @@ def k_nearest_neighbors(k, dataset, model_choice, new_vect):
 
 	return most_common
 
+class DataSet(OrderedDict):
+	'''Special dictionary that contains models with classifications that contain feature vectors
+
+	Designated Structure:
+	{
+	  'model_1':{
+	    'classification_1':[
+	      [feature_vector_1],
+	      ...
+	    ],
+	    ...
+	  },
+	  ...
+	}
+	'''
+
+	def __init__(self):
+		super(DataSet, self).__init__()
+
+	def get_model(self, model):
+		return self.get_dict(model)
+
+	def add_classification_value(self, classification, feature_vector):
+		self.get_list(classification).append(feature_vector)
+
+        def get_list(self, key):
+		'''get list from key, if list doesn't exist
+		'''
+		try:
+			return self[key]
+		except KeyError, AttributeError:
+		       	self[key] = []
+		return self[key]
+
+	def get_dict(self, key):
+		'''get dict from key. if key doesn't exist, return make new DataSet
+		'''
+		try:
+			return self[key]
+		except KeyError, AttributeError:
+		       	self.dataset[key] = DataSet()
+		return self[key]
+
 class Game_Reader(object):
 	def __init__(self, pieces, board, dir=gameplay_dir):
 		self.gameplay_files = [file for file in glob.glob(dir + "*.csv")];
 		self.sample_board = board;
 		self.pieces = pieces;
-		self.dataset = OrderedDict()
+		self.dataset = DataSet()
 
         def feature_dict_from_board(self, board_list):
 		'''returns a long vector of features from a board
@@ -117,14 +160,15 @@ class Game_Reader(object):
 				classification = (ast.literal_eval(move[0]), ast.literal_eval(move[2]))
 				features = self.feature_dict_from_board(zip(*ast.literal_eval(move[3])))
 
-				try:
+				self.dataset[model][classification]
+				'''try:
 					self.dataset[model]
 					try:
 						self.dataset[model][classification].append(features)
 					except KeyError, AttributeError:
 						self.dataset[model][classification] = [features]
 				except KeyError, AttributeError:
-					self.dataset[model] = {}
+					self.dataset[model] = {}'''
 
 		return self.dataset
 
