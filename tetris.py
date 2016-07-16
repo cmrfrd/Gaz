@@ -125,12 +125,24 @@ class TetrisApp(object):
 		self.rotation = 0
 
 		if start_auto:self.flip()		
+
+	def get_piece_index(self, shape):
+		'''Since tetris piece variables are morphed in place, we need to keep rotating them to get their index
+		'''
+		rotations = 0
+		index = -1
+		for r in range(3):
+			try:
+				index = tetris_shapes.index(shape)
+			except ValueError:
+				shape = rotate_clockwise(shape)
+		return index
 	
 	def new_piece(self):
 		self.piece = self.next_piece[:]
 		self.piece_num = rand(len(tetris_shapes))
 		self.next_piece = tetris_shapes[self.piece_num]
-		#self.next_piece = tetris_shapes[5]
+
 		self.piece_x = int(cols / 2 - len(self.piece[0])/2)
 		self.piece_y = 0
 		
@@ -238,7 +250,7 @@ class TetrisApp(object):
 				  self.board,
 				  self.piece,
 				  (self.piece_x, self.piece_y))
-				if self.record:self.record_list.append((self.piece_x, (self.piece, self.piece_num), self.rotation, deepcopy(self.board)))
+				if self.record:self.record_list.append((self.piece_x, (self.piece, self.get_piece_index(self.piece)), self.rotation, deepcopy(self.board)))
 				self.new_piece()
 				cleared_rows = 0
 				while True:

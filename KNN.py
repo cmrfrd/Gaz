@@ -38,10 +38,12 @@ def k_nearest_neighbors(k, dataset, model_choice, new_vect):
 
 	#get all the distances away from a given new_vect
 	distances = []
+	index = 0
 	for classification, feature_val_list in dataset[model_choice].iteritems():
+		if index == 1:print feature_val_list[0]
 		for feature_dict in feature_val_list:
 			distances.append( (classification, euclidian_distance( feature_dict.values(), new_vect ) ) )
-
+		index += 1
 	#get the shortest 'k' distances for classification
 	top_k_distances = [d[0] for d in sorted(distances, key=by_dist)[:k]]
 	
@@ -65,8 +67,8 @@ class Game_Reader(object):
 
 		feature_dict = OrderedDict(board.__dict__)
 
-		for index, col in enumerate(board):
-			feature_dict["col" + str(index)] = col.calc_data().height
+		#for index, col in enumerate(board):
+		#	feature_dict["col" + str(index)] = col.calc_data().height
 
 		return feature_dict
 
@@ -85,9 +87,9 @@ class Game_Reader(object):
 		'''
 		
 		if filename == None:
-			filename = "models/" + datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + '-' + str(len(self.dataset))
+			filename = datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + '-' + str(len(self.dataset))
 		
-		model_file = open(filename + ".pickle", "wb")
+		model_file = open("models/" + filename + ".pickle", "wb")
 		pickle.dump(self.dataset, model_file)
 		model_file.close()
 		
