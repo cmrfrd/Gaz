@@ -397,7 +397,7 @@ Press space to continue""" % self.score)
 
 parser = argparse.ArgumentParser(description='Plays tetris')
 
-parser.add_argument('-a', action="store_true", default=False, dest="auto_mode", help='Add -a for Gaz to take over')
+parser.add_argument('-gaz', action="store_true", default=False, dest="auto_mode", help='Add -gaz for Gaz to take over')
 parser.add_argument('-inv', action="store_false", default=True, dest="visible_screen", help='Add -inv for screen to be invisible')
 parser.add_argument('-r', default=False, const="", dest="record", nargs="?",  help='Add -r and the name of the name of the filename to record your gameplay. If no name provided a name will be generated based on the current datetime')
 parser.add_argument('-knn', default=False, const="defaultmodel", dest="knn_modelname", nargs="?", help='Add this flag and a modelname to use KNN. If no model is provided "defaultmodel" will be used ')
