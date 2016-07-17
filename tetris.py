@@ -8,12 +8,15 @@
 #     Return - Instant drfrom random import randrange as rand
 import pygame, sys
 from threading import Event
-from tetris_player import player_process
 from random import randrange as rand
+from copy import deepcopy
 import datetime
 import csv
 import os
-from copy import deepcopy
+import argparse
+
+from tetris_player import player_process
+
 
 # The configuration
 cell_size =	18
@@ -392,19 +395,33 @@ Press space to continue""" % self.score)
 								key_actions[key]()
 				dont_burn_my_cpu.tick(maxfps)
 
+parser = argparse.ArgumentParser(description='Plays tetris')
+
+parser.add_argument('-a', action="store_true", default=False, dest="auto_mode", help='Add -a for Gaz to take over')
+parser.add_argument('-inv', action="store_false", default=True, dest="visible_screen", help='Add -inv for screen to be invisible')
+parser.add_argument('-r', default=False, const="", dest="record", nargs="?",  help='Add -r and the name of the name of the filename to record your gameplay. If no name provided a name will be generated based on the current datetime')
+parser.add_argument('-knn', default=False, const="defaultmodel", dest="knn_modelname", nargs="?", help='Add this flag and a modelname to use KNN. If no model is provided "defaultmodel" will be used ')
+parser.add_argument('-greedy', action="store_true", default=False, dest="greedy", help='Add this flag to use a greedy algorithm')
 
 if __name__ == '__main__':
-	print "1 = Yes"
-	print "0 = No"
-	if len(sys.argv) <= 3:
-		auto = bool(int(raw_input("Auto Mode: ")))
-		isscreen = bool(int(raw_input("Screen Visible: ")))
-		record = bool(int(raw_input("Record Gameplay: ")))
-	else:
-		auto = bool(int(sys.argv[1]))
-		isscreen = bool(int(sys.argv[2]))
-		record = bool(int(sys.argv[3]))
+	args = parser.parse_args()
+	
+	print args
 
-	App = TetrisApp(start_auto=auto, screen=isscreen, record=record)
+	auto = args.auto_mode
+	visible_screen = args.visible_screen
+	record = args.record
+
+	mode = ("greedy", "")
+	if args.knn_modelname:#if the knn arg is provided
+		mode = ("knn", args.knn_modelname)
+	elif args.greedy:#if greedy arg provided
+		mode = ("greedy", "")
+
+	App = TetrisApp(start_auto=auto, 
+			screen=isscreen, 
+			record=record, 
+			mode=mode,
+			)
 	App.run()
 	App.quit()
