@@ -41,6 +41,8 @@ Currently there are 2 ways to use Tetris with Gaz.
     
     By running ```python tetris.py -gaz -knn``` Gaz will automatically start playing tetris utilizing the k nearest neighbors algorithm with a prebuilt model.
     
-    Advanced Usage:
+    **Advanced Usage:**
     
-    By running ```python metric_tetris.py``` you can have Gaz play multiple games at once over many games.
+    By running ```python metric_tetris.py``` you can have Gaz play multiple games at once over many games, build summaries, and eventually will learn and get better at playing tetris.
+
+    To build DataSets and Models edit ```build_model.py``` to save and build models.

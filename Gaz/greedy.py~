@@ -1,0 +1,48 @@
+
+
+#a bunch of scorign functions I tried...
+#in order are the ones that worked best
+
+def score(board):
+    return (float(board.full_rows)) / (board.max + board.min + board.average + board.mode + board.total_spaces + 1)
+
+def score_2(board):
+    return board.row_completeness
+
+def bad_score(board):return board.full_rows * e**-(board.total_spaces + board.max + board.min + board.average + board.mode)
+def bad_score_2(board):return ((board.max / (board.average + board.mode + board.total_spaces)) / board.min)
+def bad_score_3(board):return float(board.full_rows) ** -(board.max + board.min + board.average + board.mode + board.total_spaces + 1)
+def bad_score_4(board):return (board.max + board.min + board.average + board.mode + board.total_spaces + 1) % board.full_rows
+def bad_score_5(board):return (float(board.min)/board.max) * (board.full_rows/(board.total_spaces+1))
+def bad_score_6(board):return (board.min/float(board.max)) * (board.mode/board.average) * (board.full_rows/(float(board.total_spaces)+1))
+
+	def find_best_scored_move(self, board, piece, score_func, time=0.5):
+		scores = {}
+		for rotated_piece in self.get_rotations(piece):#iter through each rotation
+
+			for slice_index, slice in board.slice_iter(len(zip(*rotated_piece))):#iter through each slice				
+
+				slice_without_piece = slice.calc_data()
+				board_without_piece = board.calc_data()	
+				#renaming for ease of use
+
+				slice_with_piece = slice.fake_add(0, rotated_piece).calc_data()
+				board_with_piece = board.fake_add(slice_index, rotated_piece).calc_data()			
+				#add the piece to the boards
+
+				total_score = score_func(slice_with_piece) + score_func(board_with_piece)
+
+				#print board_without_piece
+				#print '\n'
+				'''for i in board_without_piece:print i
+				print '\n'
+				for i in board_with_piece:print i
+				board_with_piece.data()
+				print total_score
+				print (slice_index, rotated_piece)'''
+		
+				scores[total_score] = (slice_index, rotated_piece)
+			
+		best_move = scores[max(scores.keys())]
+		sleep(time)
+		return best_move

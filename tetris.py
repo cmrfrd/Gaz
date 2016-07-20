@@ -15,7 +15,7 @@ import csv
 import os
 import argparse
 
-from tetris_player import player_process
+from Gaz import player
 
 
 # The configuration
@@ -93,7 +93,8 @@ def new_board():
 	return board
 
 class TetrisApp(object):
-	def __init__(self, start_auto=False, screen=True, record=False):
+
+	def __init__(self, start_auto=False, screen=True, record=False, mode=("greedy", "")):
 		pygame.init()
 		pygame.key.set_repeat(250,25)
 
@@ -104,30 +105,34 @@ class TetrisApp(object):
 		
 		self.default_font =  pygame.font.Font(
 			pygame.font.get_default_font(), 12)
-		
-		if screen:
-			self.screen = pygame.display.set_mode((self.width, self.height))
-		else:
-			self.screen = None
-
-		self.record = record
-     		self.record_list = []
 
 		pygame.event.set_blocked(pygame.MOUSEMOTION) # We do not need
 		                                             # mouse movement
 		                                             # events, so we
 		                                             # block them.
-		self.piece_num = rand(len(tetris_shapes))
-		self.next_piece = tetris_shapes[self.piece_num]
 
-		self.init_game()
 
-		self.auto = Event()
-		self.player = player_process(self)
+		#set screen if flag is provided
+		self.screen = pygame.display.set_mode((self.width, self.height)) if screen else None
+
+		#record flag, record list that stores moves including pieces processed and the rotation
+		self.record = record
+     		self.record_list = []
 		self.pieces_processed = 0
 		self.rotation = 0
 
-		if start_auto:self.flip()		
+
+		#initialize the game and important values
+		self.init_game()
+
+		#create the 'auto' event triggered by left shift
+		self.auto = Event()
+
+		#create the "player" object which will be triggered on left shift or by argument
+		self.player = player(self, mode)
+
+		#flips 'auto' event to start in auto mode
+		if start_auto:self.flip_auto()		
 
 	def get_piece_index(self, shape):
 		'''Since tetris piece variables are morphed in place, we need to keep rotating them to get their index
@@ -226,19 +231,32 @@ class TetrisApp(object):
 				self.piece_x = new_x
 
 	def quit(self):
-		print "shutting down process"
+		
+		#shut down process when game quits
 		self.player.shutdown()
-		self.auto.set()
+
 		if self.screen:
 			self.center_msg("Exiting...")		
 			pygame.display.update()
-		if self.record and self.pieces_processed > 150:
-			filepath = "gameplays/" + datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + "-" + str(self.pieces_processed) + ".csv"
+
+		#if the record flag is set, record the gameplay
+		if self.record:
+			filepath = "gameplays/" 
+			
+			if self.record == "":
+				filepath += datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + \
+				            "-" + \
+				            str(self.pieces_processed) + \
+					    ".csv"
+			else:
+				filepath += self.record + ".csv"
+
+			#write the output of the record list into a csv file. Easy peasy
 			with open(filepath, "wb") as record_file:
 				csv_file_writer = csv.writer(record_file, delimiter=":")
 				for play in self.record_list:
 					csv_file_writer.writerow(play)
-		print "ending game"
+
 		print "%d" % (self.pieces_processed)
 		sys.exit()
 	
@@ -253,7 +271,15 @@ class TetrisApp(object):
 				  self.board,
 				  self.piece,
 				  (self.piece_x, self.piece_y))
-				if self.record:self.record_list.append((self.piece_x, (self.piece, self.get_piece_index(self.piece)), self.rotation, deepcopy(self.board)))
+
+				# if the record flag is set add all the 
+				if self.record:
+					self.record_list.append((self.piece_x, 
+								 (self.piece, self.get_piece_index(self.piece)), 
+								 self.rotation, 
+								 deepcopy(self.board))
+							       )
+
 				self.new_piece()
 				cleared_rows = 0
 				while True:
@@ -265,6 +291,7 @@ class TetrisApp(object):
 							break
 					else:
 						break
+
 				self.add_cl_lines(cleared_rows)
 				self.pieces_processed +=1
 				self.rotation = 0
@@ -296,7 +323,7 @@ class TetrisApp(object):
 			self.init_game()
 			self.gameover = False
 
-	def flip(self):
+	def flip_auto(self):
 		self.auto.clear() if self.auto.is_set() else self.auto.set()
 	
 	def run(self):
@@ -309,7 +336,7 @@ class TetrisApp(object):
 			'p':		self.toggle_pause,
 			's':	        self.start_game,
 			'SPACE':	self.insta_drop,
-			'LSHIFT':	self.flip
+			'LSHIFT':	self.flip_auto
 		}
 		
 		self.gameover = False
