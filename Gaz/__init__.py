@@ -1,2 +1,4 @@
-from tetris_player import player_process, Board
-from KNN import k_nearest_neighbors, DataSet, Game_Reader
+from player import player
+from game_reader import game_reader, DataSet
+from tetris_infastructure import Board
+

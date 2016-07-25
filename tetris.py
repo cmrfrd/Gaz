@@ -18,6 +18,8 @@ import argparse
 from Gaz import player
 
 
+filepath = "Gaz/gameplays/" 
+
 # The configuration
 cell_size =	18
 cols =		10
@@ -123,6 +125,7 @@ class TetrisApp(object):
 
 
 		#initialize the game and important values
+		self.next_piece = tetris_shapes[rand(len(tetris_shapes))]
 		self.init_game()
 
 		#create the 'auto' event triggered by left shift
@@ -241,7 +244,6 @@ class TetrisApp(object):
 
 		#if the record flag is set, record the gameplay
 		if self.record:
-			filepath = "gameplays/" 
 			
 			if self.record == "":
 				filepath += datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + \
@@ -432,8 +434,6 @@ parser.add_argument('-greedy', action="store_true", default=False, dest="greedy"
 
 if __name__ == '__main__':
 	args = parser.parse_args()
-	
-	print args
 
 	auto = args.auto_mode
 	visible_screen = args.visible_screen
@@ -446,7 +446,7 @@ if __name__ == '__main__':
 		mode = ("greedy", "")
 
 	App = TetrisApp(start_auto=auto, 
-			screen=isscreen, 
+			screen=visible_screen, 
 			record=record, 
 			mode=mode,
 			)

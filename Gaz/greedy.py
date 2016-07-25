@@ -1,17 +1,22 @@
-from Tetris_Infastructure import get_rotations
+from tetris_infastructure import get_piece_rotation, get_all_moves
+from time import sleep
+import json
 
-#a bunch of scorign functions I tried...
+#a bunch of scoring functions I tried...
 #in order are the ones that worked best
+
+def score_space(board):
+    return float(board.full_rows) / (board.total_spaces + board.max + 1)
 
 def score(board):
     
-    numer = (float(board.full_rows))
+    numer = float(board.full_rows)
     denom = (board.max + board.min + board.average + board.mode + board.total_spaces + 1)
 
     return numer / denom
 
 def score_2(board):
-    return board.row_completeness
+    return board.row_completeness / (board.max + board.min + board.total_spaces + 1)
 
 def bad_score(board):
     return board.full_rows * e**-(board.total_spaces + board.max + board.min + board.average + board.mode)
@@ -34,32 +39,29 @@ def bad_score_6(board):
 class greedy(object):
     '''greedy implements a greedy algorithm
     '''
-    def __init__(self, time_const=0.5):
-        self.score_func = score
+    def __init__(self, time_const=0.05):
+        self.score_func = score_space
         self.time_const = time_const
 
     def get_next_move(self, board, piece):
+        '''get all possible moves, score them, get the max
+        '''
         scores = {}
 
-        for rotation_index, rotated_piece in enumerate(get_rotations(piece)):
-            for slice_index, slice in board.slice_iter(len(zip(*rotated_piece))):
-
-                #calc data for each board
-                slice_without_piece = slice.calc_data()
-                board_without_piece = board.calc_data()	
+        for move in get_all_moves(board, piece):
 
                 #add the piece to the board
-                slice_with_piece = slice.fake_add(0, rotated_piece).calc_data()
-                board_with_piece = board.fake_add(slice_index, rotated_piece).calc_data()			
-                
+                board_with_piece = move["board"].calc_data()
+
                 #calculate the score
-                total_score = self.score_func(slice_with_piece) + \
-                              self.score_func(board_with_piece)
-            
-        scores[total_score] = (slice_index, rotated_piece)
-    
+                total_score = self.score_func(board_with_piece)
+
+                scores[total_score] = (move["slice"]["index"], 
+                                       get_piece_rotation(move["rotation"]["piece"]))
+
         best_move = scores[max(scores.keys())]
-        sleep(self.time)
-    
+
+        sleep(self.time_const)
+
         return best_move
 

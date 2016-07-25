@@ -35,6 +35,9 @@ Currently there are 2 ways to use Tetris with Gaz.
         LEFT SHIFT - Gaz takes over
         ESC - ends the game
 
+    If you want to record your games for Gaz to look at or for personal 
+    use run ```python tetris.py -r```. 
+
 2. Playing with Gaz
 
     By running ```python tetris.py -gaz``` Gaz will automatically start playing tetris using her greedy algorithm.
