@@ -8,12 +8,17 @@
 #     Return - Instant drfrom random import randrange as rand
 import pygame, sys
 from threading import Event
-from tetris_player import player_process
 from random import randrange as rand
+from copy import deepcopy
 import datetime
 import csv
 import os
-from copy import deepcopy
+import argparse
+
+from Gaz import player
+
+
+filepath = "Gaz/gameplays/" 
 
 # The configuration
 cell_size =	18
@@ -90,7 +95,8 @@ def new_board():
 	return board
 
 class TetrisApp(object):
-	def __init__(self, start_auto=False, screen=True, record=False):
+
+	def __init__(self, start_auto=False, screen=True, record=False, mode=("greedy", "")):
 		pygame.init()
 		pygame.key.set_repeat(250,25)
 
@@ -101,30 +107,35 @@ class TetrisApp(object):
 		
 		self.default_font =  pygame.font.Font(
 			pygame.font.get_default_font(), 12)
-		
-		if screen:
-			self.screen = pygame.display.set_mode((self.width, self.height))
-		else:
-			self.screen = None
-
-		self.record = record
-     		self.record_list = []
 
 		pygame.event.set_blocked(pygame.MOUSEMOTION) # We do not need
 		                                             # mouse movement
 		                                             # events, so we
 		                                             # block them.
-		self.piece_num = rand(len(tetris_shapes))
-		self.next_piece = tetris_shapes[self.piece_num]
 
-		self.init_game()
 
-		self.auto = Event()
-		self.player = player_process(self)
+		#set screen if flag is provided
+		self.screen = pygame.display.set_mode((self.width, self.height)) if screen else None
+
+		#record flag, record list that stores moves including pieces processed and the rotation
+		self.record = record
+     		self.record_list = []
 		self.pieces_processed = 0
 		self.rotation = 0
 
-		if start_auto:self.flip()		
+
+		#initialize the game and important values
+		self.next_piece = tetris_shapes[rand(len(tetris_shapes))]
+		self.init_game()
+
+		#create the 'auto' event triggered by left shift
+		self.auto = Event()
+
+		#create the "player" object which will be triggered on left shift or by argument
+		self.player = player(self, mode)
+
+		#flips 'auto' event to start in auto mode
+		if start_auto:self.flip_auto()		
 
 	def get_piece_index(self, shape):
 		'''Since tetris piece variables are morphed in place, we need to keep rotating them to get their index
@@ -223,19 +234,31 @@ class TetrisApp(object):
 				self.piece_x = new_x
 
 	def quit(self):
-		print "shutting down process"
+		
+		#shut down process when game quits
 		self.player.shutdown()
-		self.auto.set()
+
 		if self.screen:
 			self.center_msg("Exiting...")		
 			pygame.display.update()
-		if self.record and self.pieces_processed > 150:
-			filepath = "gameplays/" + datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + "-" + str(self.pieces_processed) + ".csv"
+
+		#if the record flag is set, record the gameplay
+		if self.record:
+			
+			if self.record == "":
+				filepath += datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + \
+				            "-" + \
+				            str(self.pieces_processed) + \
+					    ".csv"
+			else:
+				filepath += self.record + ".csv"
+
+			#write the output of the record list into a csv file. Easy peasy
 			with open(filepath, "wb") as record_file:
 				csv_file_writer = csv.writer(record_file, delimiter=":")
 				for play in self.record_list:
 					csv_file_writer.writerow(play)
-		print "ending game"
+
 		print "%d" % (self.pieces_processed)
 		sys.exit()
 	
@@ -250,7 +273,15 @@ class TetrisApp(object):
 				  self.board,
 				  self.piece,
 				  (self.piece_x, self.piece_y))
-				if self.record:self.record_list.append((self.piece_x, (self.piece, self.get_piece_index(self.piece)), self.rotation, deepcopy(self.board)))
+
+				# if the record flag is set add all the 
+				if self.record:
+					self.record_list.append((self.piece_x, 
+								 (self.piece, self.get_piece_index(self.piece)), 
+								 self.rotation, 
+								 deepcopy(self.board))
+							       )
+
 				self.new_piece()
 				cleared_rows = 0
 				while True:
@@ -262,6 +293,7 @@ class TetrisApp(object):
 							break
 					else:
 						break
+
 				self.add_cl_lines(cleared_rows)
 				self.pieces_processed +=1
 				self.rotation = 0
@@ -293,7 +325,7 @@ class TetrisApp(object):
 			self.init_game()
 			self.gameover = False
 
-	def flip(self):
+	def flip_auto(self):
 		self.auto.clear() if self.auto.is_set() else self.auto.set()
 	
 	def run(self):
@@ -306,7 +338,7 @@ class TetrisApp(object):
 			'p':		self.toggle_pause,
 			's':	        self.start_game,
 			'SPACE':	self.insta_drop,
-			'LSHIFT':	self.flip
+			'LSHIFT':	self.flip_auto
 		}
 		
 		self.gameover = False
@@ -392,19 +424,31 @@ Press space to continue""" % self.score)
 								key_actions[key]()
 				dont_burn_my_cpu.tick(maxfps)
 
+parser = argparse.ArgumentParser(description='Plays tetris')
+
+parser.add_argument('-gaz', action="store_true", default=False, dest="auto_mode", help='Add -gaz for Gaz to take over')
+parser.add_argument('-inv', action="store_false", default=True, dest="visible_screen", help='Add -inv for screen to be invisible')
+parser.add_argument('-r', default=False, const="", dest="record", nargs="?",  help='Add -r and the name of the name of the filename to record your gameplay. If no name provided a name will be generated based on the current datetime')
+parser.add_argument('-knn', default=False, const="defaultmodel", dest="knn_modelname", nargs="?", help='Add this flag and a modelname to use KNN. If no model is provided "defaultmodel" will be used ')
+parser.add_argument('-greedy', action="store_true", default=False, dest="greedy", help='Add this flag to use a greedy algorithm')
 
 if __name__ == '__main__':
-	print "1 = Yes"
-	print "0 = No"
-	if len(sys.argv) <= 3:
-		auto = bool(int(raw_input("Auto Mode: ")))
-		isscreen = bool(int(raw_input("Screen Visible: ")))
-		record = bool(int(raw_input("Record Gameplay: ")))
-	else:
-		auto = bool(int(sys.argv[1]))
-		isscreen = bool(int(sys.argv[2]))
-		record = bool(int(sys.argv[3]))
+	args = parser.parse_args()
 
-	App = TetrisApp(start_auto=auto, screen=isscreen, record=record)
+	auto = args.auto_mode
+	visible_screen = args.visible_screen
+	record = args.record
+
+	mode = ("greedy", "")
+	if args.knn_modelname:#if the knn arg is provided
+		mode = ("knn", args.knn_modelname)
+	elif args.greedy:#if greedy arg provided
+		mode = ("greedy", "")
+
+	App = TetrisApp(start_auto=auto, 
+			screen=visible_screen, 
+			record=record, 
+			mode=mode,
+			)
 	App.run()
 	App.quit()

@@ -1,5 +1,5 @@
 from KNN import Game_Reader, k_nearest_neighbors
-from tetris_player import Board, tetris_shapes
+from Gaz import player, Board, tetris_shapes
 import json
 from collections import OrderedDict
 
