@@ -97,9 +97,7 @@ def get_piece_rotation(shape):
 
 
 def get_all_moves(board, piece):
-    rotations_iter = get_rotations(piece)
-
-    for rotation_index, rotated_piece in enumerate(rotations_iter):
+    for rotation_index, rotated_piece in enumerate(get_rotations(piece)):
         for slice_index, slice_board in board.slice_iter(len(zip(*rotated_piece))):
             yield {
                 "board":board.fake_add(slice_index, rotated_piece),
@@ -111,7 +109,7 @@ def get_all_moves(board, piece):
                     "index":slice_index,
                     "board":slice_board
                     }
-                }    
+                }
 
 class Row(list):
     '''Just a list object that will be expanded upon
@@ -168,18 +166,15 @@ class Board(list):
     '''
 
     def __init__(self, board_list):
-        if isinstance(board_list, Board):
-            self = board_list
-        else:
-            list.__init__(self, [Column(col).calc_data() for col in board_list])
+        list.__init__(self, [Column(col).calc_data() for col in board_list])
 
-            self.max = False
-            self.min = False
-            self.average = False
-            self.mode = False
-            self.total_spaces = False
-            self.full_rows = False
-            self.row_completeness = False
+        self.max = False
+        self.min = False
+        self.average = False
+        self.mode = False
+        self.total_spaces = False
+        self.full_rows = False
+        self.row_completeness = False
 
     def invert(self):
         '''return just a new list in "row" format
@@ -233,6 +228,7 @@ class Board(list):
         '''print the data to console
         '''
         print "Max: %d" % (self.max)
+        print "Min: %d" % (self.min)
         print "Avg: %f" % (self.average)
         print "Mode: %d" % (self.mode)
         print "Spaces: %d" % (self.total_spaces)

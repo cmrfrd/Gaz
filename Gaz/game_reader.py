@@ -1,4 +1,5 @@
 import glob
+from os.path import abspath, dirname, realpath
 import csv
 import json
 import ast
@@ -6,13 +7,29 @@ import pickle
 import datetime
 from math import sqrt
 from collections import Counter, OrderedDict
-from Tetris_Infastructure import Board, tetris_shapes
+from tetris_infastructure import Board, tetris_shapes
 
-gameplay_dir = "gameplays/"
+gameplay_dir = "/gameplays/"
+model_dir = "/models/"
 
 '''
 Game reader will read games and product "dataset" object
 '''
+
+def feature_scale(feature, f_max=None, f_min=None):
+	'''feature scale a single value given a max and min
+	'''
+	assert f_max != None or f_min != None
+	return (float(feature) - f_min)/(f_max - f_min)
+
+def feature_scale_list(features, f_max=None, f_min=None):
+	'''This func will normalize a list of features to fin in [0,1]
+	'''
+	if f_max==None:f_max = max(features)
+	if f_min==None:f_min = min(features)
+
+	return [feature_scale(f, f_max, f_min) for f in features]	
+
 
 class DataSet(OrderedDict):
 	'''Special dictionary that contains models with classifications that contain feature vectors
@@ -30,14 +47,14 @@ class DataSet(OrderedDict):
 	}
 	'''
 
-	def __init__(self):
-		super(DataSet, self).__init__()
+	def __init__(self, *args, **kwargs):
+		super(DataSet, self).__init__(*args, **kwargs)
 
 	def get_model(self, model):
 		return self.get_dict(model)
 
-	def add_classification_value(self, classification, feature_vector):
-		self.get_list(classification).append(feature_vector)
+	def add_classification_value(self, classification, feature_dict):
+		self.get_list(classification).append(feature_dict)
 
         def get_list(self, key):
 		'''get list from key, if list doesn't exist
@@ -54,12 +71,15 @@ class DataSet(OrderedDict):
 		try:
 			return self[key]
 		except KeyError, AttributeError:
-		       	self.dataset[key] = DataSet()
+		       	self[key] = DataSet()
 		return self[key]
 
 class game_reader(object):
-	def __init__(self, dir=gameplay_dir):
-            self.gameplay_files = [file for file in glob.glob(dir + "*.csv")]
+	def __init__(self, gameplay_dir=gameplay_dir):
+
+	    self.current_filepath = dirname(realpath(__file__))
+            self.gameplay_files = [file for file in glob.glob(self.current_filepath + gameplay_dir + "*.csv")]
+
 	    self.dataset = DataSet()
 
         def feature_dict_from_board(self, board_list):
@@ -72,36 +92,30 @@ class game_reader(object):
             
             return feature_dict
 
-
 	def read_model(self, model_name):
             '''Read a model from a file
             '''
-            model_file = open("models/" + model_name  + ".pickle")
+            with open(self.current_filepath + model_dir + model_name  + ".pickle", "r+") as model_file:
+		    self.dataset = pickle.load(model_file)
+		    return self.dataset
 
-            self.dataset = pickle.load(model_file)
-
-            return self.dataset
-
-	def save_model(self, filename=None):
+	def save_model(self, model_name=None):
             '''save dataset to pickle file for reloading
             '''
             
-            if filename == None:
+            if model_name == None:
                 filename = datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + '-' + str(len(self.dataset))
 		
-		model_file = open("models/" + filename + ".pickle", "wb")
-		pickle.dump(self.dataset, model_file)
-		model_file.close()
+	    with open(self.current_filepath + model_dir + model_name + ".pickle", "wb+") as model_file:
+		    pickle.dump(self.dataset, model_file)
+		    model_file.close()
 		
-	def read_games(self, num_games=1):#iterator that goes through each game
+	def read_games(self, num_games=1):
 		'''Read in 'n' games and build the dataset from those csv games
 		'''
-
 		assert 1 <= num_games <= len(self.gameplay_files)
 
-		for index, game_file in enumerate(self.gameplay_files):#iter through each game				
-
-			#break if num_games has been read
+		for index, game_file in enumerate(self.gameplay_files):
 			if index >= num_games:
 				break
 
@@ -111,13 +125,12 @@ class game_reader(object):
 
 			#iterate through each move and create dict dataset based on information
 			for index, move in enumerate(moves):
-
                                 #look at csv data to see ordering of information
 				model = ast.literal_eval(move[1])[1]
 				classification = (ast.literal_eval(move[0]), ast.literal_eval(move[2]))
 				features = self.feature_dict_from_board(zip(*ast.literal_eval(move[3])))
 
-				self.dataset[model][classification]
+				self.dataset.get_model(model).add_classification_value(classification, features)
 	
 		return self.dataset
 

@@ -1,9 +1,9 @@
 from time import sleep
 from threading import Thread, Event
 from tetris_infastructure import Board
+
 from KNN import KNN
 from greedy import greedy
-from math import e
 
 class no_brain(object):
 	def __init__(self):
@@ -12,11 +12,16 @@ class no_brain(object):
 		raise NotImplementedError("No brain has been provided to Gaz")
 
 class player(Thread):
-	def __init__(self, app, mode):
+	def __init__(self, app, **kwargs):
 		Thread.__init__(self)
 		self.exit = Event()
 		self.app = app
-		self.mode = mode
+		self.player_brain = no_brain()
+
+		if kwargs["knn_modelname"]:
+			self.player_brain = KNN(kwargs["knn_modelname"])
+		elif kwargs["greedy"]:
+			self.player_brain = greedy()
 
 	def execute_move(self, move, time=0.01):
 		'''executes move based on tuple (x_coord, rotations)
@@ -44,13 +49,6 @@ class player(Thread):
 		debug = True
 		player_pieces_processed = 0
 
-		#To implement KNN uncomment line below as well as KNN line in while loop
-		player_brain = no_brain()
-		if self.mode[0] == "greedy":
-			player_brain = greedy()
-		if self.mode[0] == "knn":
-			KNN_mover = self.best_move_by_KNN(tetris_shapes, Board)
-
 		while not self.exit.is_set() and self.app.auto.wait() and not self.app.gameover:
 
 			#make sure player and game are in sync with pieces processed
@@ -58,7 +56,11 @@ class player(Thread):
 				player_pieces_processed += 1
 				continue
 
-			move = player_brain.get_next_move(Board(zip(*self.app.board)), self.app.piece)
+			#Create new board and piece object for player to injest
+			board = Board(zip(*self.app.board))
+			piece = self.app.piece
+
+			move = self.player_brain.get_next_move(board, piece)
 
 			if self.execute_move(move):
 				player_pieces_processed += 1
@@ -67,4 +69,5 @@ class player(Thread):
 
 	def shutdown(self):
 		print "executing shutdown"
+		self.app.auto.set()
 		self.exit.set()

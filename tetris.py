@@ -13,15 +13,16 @@ from copy import deepcopy
 import datetime
 import csv
 import os
+from os.path import abspath, dirname, realpath
 import argparse
 
 from Gaz import player
 
 
-filepath = "Gaz/gameplays/" 
+game_filepath = "Gaz/gameplays/" 
 
 # The configuration
-cell_size =	18
+cell_size =	19
 cols =		10
 rows =		22
 maxfps = 	30
@@ -96,7 +97,7 @@ def new_board():
 
 class TetrisApp(object):
 
-	def __init__(self, start_auto=False, screen=True, record=False, mode=("greedy", "")):
+	def __init__(self, start_auto=False, screen=True, record=False, **kwargs):
 		pygame.init()
 		pygame.key.set_repeat(250,25)
 
@@ -132,17 +133,19 @@ class TetrisApp(object):
 		self.auto = Event()
 
 		#create the "player" object which will be triggered on left shift or by argument
-		self.player = player(self, mode)
+		self.player = player(self, **kwargs)
 
 		#flips 'auto' event to start in auto mode
-		if start_auto:self.flip_auto()		
+		if start_auto:
+			self.flip_auto()		
 
 	def get_piece_index(self, shape):
-		'''Since tetris piece variables are morphed in place, we need to keep rotating them to get their index
+		'''
+		Rotate a shape max 4 times to find it's index
 		'''
 		rotations = 0
 		index = -1
-		for r in range(3):
+		for r in range(4):
 			try:
 				index = tetris_shapes.index(shape)
 			except ValueError:
@@ -244,7 +247,8 @@ class TetrisApp(object):
 
 		#if the record flag is set, record the gameplay
 		if self.record:
-			
+			filepath = dirname(realpath(__file__)) + game_filepath
+			print filepath
 			if self.record == "":
 				filepath += datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + \
 				            "-" + \
@@ -254,6 +258,9 @@ class TetrisApp(object):
 				filepath += self.record + ".csv"
 
 			#write the output of the record list into a csv file. Easy peasy
+
+
+			print "writing to" + filepath
 			with open(filepath, "wb") as record_file:
 				csv_file_writer = csv.writer(record_file, delimiter=":")
 				for play in self.record_list:
@@ -326,8 +333,11 @@ class TetrisApp(object):
 			self.gameover = False
 
 	def flip_auto(self):
-		self.auto.clear() if self.auto.is_set() else self.auto.set()
-	
+		if self.auto.is_set():
+			self.auto.clear() 
+		else:
+			self.auto.set()
+
 	def run(self):
 		key_actions = {
 			'ESCAPE':	self.quit,
@@ -371,7 +381,14 @@ Press space to continue""" % self.score)
 						self.disp_msg("Score: %d\n\nLevel: %d\
 							\nLines: %d" % (self.score, self.level, self.lines),
 							(self.rlim+cell_size, cell_size*5))
-						self.disp_msg("'Left Shift'\nfor Auto Play", (self.rlim + cell_size, cell_size * 10))
+
+						if self.auto.is_set():
+							self.disp_msg("Press \n'Left Shift'\nfor Manual\nPlay", (self.rlim + cell_size, cell_size * 10))
+							self.disp_msg("IN AUTO \nMODE", (self.rlim + cell_size, cell_size * 15))
+						else:
+							self.disp_msg("'Left Shift'\nfor Auto play", (self.rlim + cell_size, cell_size * 10))
+							self.disp_msg("IN PLAYER \nMODE", (self.rlim + cell_size, cell_size * 15))
+						
 
 						self.draw_matrix(self.bground_grid, (0,0))
 						self.draw_matrix(self.board, (0,0))
@@ -426,8 +443,8 @@ Press space to continue""" % self.score)
 
 parser = argparse.ArgumentParser(description='Plays tetris')
 
-parser.add_argument('-gaz', action="store_true", default=False, dest="auto_mode", help='Add -gaz for Gaz to take over')
-parser.add_argument('-inv', action="store_false", default=True, dest="visible_screen", help='Add -inv for screen to be invisible')
+parser.add_argument('-gaz', action="store_true", default=False, dest="start_auto", help='Add -gaz for Gaz to take over')
+parser.add_argument('-inv', action="store_false", default=True, dest="screen", help='Add -inv for screen to be invisible')
 parser.add_argument('-r', default=False, const="", dest="record", nargs="?",  help='Add -r and the name of the name of the filename to record your gameplay. If no name provided a name will be generated based on the current datetime')
 parser.add_argument('-knn', default=False, const="defaultmodel", dest="knn_modelname", nargs="?", help='Add this flag and a modelname to use KNN. If no model is provided "defaultmodel" will be used ')
 parser.add_argument('-greedy', action="store_true", default=False, dest="greedy", help='Add this flag to use a greedy algorithm')
@@ -435,20 +452,6 @@ parser.add_argument('-greedy', action="store_true", default=False, dest="greedy"
 if __name__ == '__main__':
 	args = parser.parse_args()
 
-	auto = args.auto_mode
-	visible_screen = args.visible_screen
-	record = args.record
-
-	mode = ("greedy", "")
-	if args.knn_modelname:#if the knn arg is provided
-		mode = ("knn", args.knn_modelname)
-	elif args.greedy:#if greedy arg provided
-		mode = ("greedy", "")
-
-	App = TetrisApp(start_auto=auto, 
-			screen=visible_screen, 
-			record=record, 
-			mode=mode,
-			)
+	App = TetrisApp(**dict(args._get_kwargs()))
 	App.run()
 	App.quit()
