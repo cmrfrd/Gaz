@@ -19,7 +19,7 @@ import argparse
 from Gaz import player
 
 
-game_filepath = "Gaz/gameplays/" 
+game_filepath = "/Gaz/gameplays/" 
 
 # The configuration
 cell_size =	19
@@ -202,7 +202,7 @@ class TetrisApp(object):
 		off_x, off_y  = offset
 		for y, row in enumerate(matrix):
 			for x, val in enumerate(row):
-				if val:
+				if val and val in range(len(colors)):
 					pygame.draw.rect(
 						self.screen,
 						colors[val],
@@ -246,9 +246,8 @@ class TetrisApp(object):
 			pygame.display.update()
 
 		#if the record flag is set, record the gameplay
-		if self.record:
+		if self.record or self.record == "" and self.pieces_processed>300:
 			filepath = dirname(realpath(__file__)) + game_filepath
-			print filepath
 			if self.record == "":
 				filepath += datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + \
 				            "-" + \
@@ -259,8 +258,6 @@ class TetrisApp(object):
 
 			#write the output of the record list into a csv file. Easy peasy
 
-
-			print "writing to" + filepath
 			with open(filepath, "wb") as record_file:
 				csv_file_writer = csv.writer(record_file, delimiter=":")
 				for play in self.record_list:
@@ -282,7 +279,7 @@ class TetrisApp(object):
 				  (self.piece_x, self.piece_y))
 
 				# if the record flag is set add all the 
-				if self.record:
+				if self.record or self.record == "":
 					self.record_list.append((self.piece_x, 
 								 (self.piece, self.get_piece_index(self.piece)), 
 								 self.rotation, 
@@ -448,6 +445,7 @@ parser.add_argument('-inv', action="store_false", default=True, dest="screen", h
 parser.add_argument('-r', default=False, const="", dest="record", nargs="?",  help='Add -r and the name of the name of the filename to record your gameplay. If no name provided a name will be generated based on the current datetime')
 parser.add_argument('-knn', default=False, const="defaultmodel", dest="knn_modelname", nargs="?", help='Add this flag and a modelname to use KNN. If no model is provided "defaultmodel" will be used ')
 parser.add_argument('-greedy', action="store_true", default=False, dest="greedy", help='Add this flag to use a greedy algorithm')
+parser.add_argument('-dgreedy', action="store", dest="dgreedy", type=int, help='Add this flag to use a deep tree search greedy algorithm')
 
 if __name__ == '__main__':
 	args = parser.parse_args()

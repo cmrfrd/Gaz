@@ -32,7 +32,6 @@ def graph(all_lifetimes):
 
 def tetris_player_process(a, i, **kwargs):
 	"""worker function that will play tetris in the background"""
-	print kwargs
 	App = tetris.TetrisApp(**kwargs)
 	a[i] = App.run()#runs the game until it loses and returns the number of pieces 
 	App.quit()
@@ -54,7 +53,8 @@ if __name__ == "__main__":
 	parser.add_argument(action="store_false", default=False, dest="screen")
 	parser.add_argument('-r', action="store", default=0, type=int, dest="records_num", help='Add -r and the number of records to record all gameplays.')
 	parser.add_argument('-knn', default=False, const="defaultmodel", dest="knn_modelname", nargs="?", help='Add this flag and a modelname to use KNN. If no model is provided "defaultmodel" will be used ')
-	parser.add_argument('-greedy', action="store_true", default=True, dest="greedy", help='Add this flag to use a greedy algorithm. Default is True')
+	parser.add_argument('-greedy', action="store_true", default=False, dest="greedy", help='Add this flag to use a greedy algorithm. Default is True')
+	parser.add_argument('-dgreedy', action="store", dest="dgreedy", type=int, help='Add this flag to use a deep tree search greedy algorithm')
 	parser.add_argument("-players", action="store", dest="batch_size", type=int, default=1, help="The number of games (python interpreters) running together")
 	parser.add_argument("-games", action="store", dest="jobs", type=int, default=1, help="number of total games being played")
 
@@ -66,13 +66,19 @@ if __name__ == "__main__":
 	jobs = args.jobs
 	lifetimes = mult.Array('i', [0]*jobs)
 
+	check_records(dict_args, jobs)
+	print dict_args
+
 	#create initial batch
 	for index in range(args.batch_size):
 		check_records(dict_args, jobs)
- 		job = mult.Process(target=tetris_player_process, args=(lifetimes, jobs-1), kwargs=dict_args)
-		job.start()
-		jobs_list.append(job)
-		jobs -= 1	
+		if jobs > 0:
+			job = mult.Process(target=tetris_player_process, args=(lifetimes, jobs-1), kwargs=dict_args)
+			job.start()
+			jobs_list.append(job)
+			jobs -= 1
+		else:
+			break
 
 	while jobs > 0 or a_job_is_alive(jobs_list):
 		job_status = [job.is_alive() for job in jobs_list]

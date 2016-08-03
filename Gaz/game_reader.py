@@ -88,8 +88,16 @@ class game_reader(object):
             board = Board(board_list)
             board.calc_data()
             
-            feature_dict = OrderedDict(board.__dict__)
-            
+            #feature_dict = OrderedDict(board.__dict__)
+	    #feature_dict = OrderedDict({
+	    #		    'full_rows':board.full_rows,
+	    #		    'spaces':board.total_spaces,
+	    #		    'max':board.max
+	    #		    })
+            feature_dict = OrderedDict(
+		    dict(
+			    ('col'+str(i), c.height) for i,c in enumerate(board)
+		    ))
             return feature_dict
 
 	def read_model(self, model_name):
