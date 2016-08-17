@@ -246,7 +246,7 @@ class TetrisApp(object):
 			pygame.display.update()
 
 		#if the record flag is set, record the gameplay
-		if self.record or self.record == "" and self.pieces_processed>300:
+		if self.record or self.record == "":
 			filepath = dirname(realpath(__file__)) + game_filepath
 			if self.record == "":
 				filepath += datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + \
@@ -262,6 +262,7 @@ class TetrisApp(object):
 				csv_file_writer = csv.writer(record_file, delimiter=":")
 				for play in self.record_list:
 					csv_file_writer.writerow(play)
+				print "WTITING TO FILE"
 
 		print "%d" % (self.pieces_processed)
 		sys.exit()
@@ -273,18 +274,16 @@ class TetrisApp(object):
 			if check_collision(self.board,
 			                   self.piece,
 			                   (self.piece_x, self.piece_y)):
+				if self.record or self.record == "":
+					piece_info = (self.piece, self.get_piece_index(self.piece))
+					record = (self.piece_x, piece_info, self.rotation, deepcopy(self.board))
+
+					self.record_list.append(record)
+
 				self.board = join_matrixes(
 				  self.board,
 				  self.piece,
 				  (self.piece_x, self.piece_y))
-
-				# if the record flag is set add all the 
-				if self.record or self.record == "":
-					self.record_list.append((self.piece_x, 
-								 (self.piece, self.get_piece_index(self.piece)), 
-								 self.rotation, 
-								 deepcopy(self.board))
-							       )
 
 				self.new_piece()
 				cleared_rows = 0
@@ -445,7 +444,8 @@ parser.add_argument('-inv', action="store_false", default=True, dest="screen", h
 parser.add_argument('-r', default=False, const="", dest="record", nargs="?",  help='Add -r and the name of the name of the filename to record your gameplay. If no name provided a name will be generated based on the current datetime')
 parser.add_argument('-knn', default=False, const="defaultmodel", dest="knn_modelname", nargs="?", help='Add this flag and a modelname to use KNN. If no model is provided "defaultmodel" will be used ')
 parser.add_argument('-greedy', action="store_true", default=False, dest="greedy", help='Add this flag to use a greedy algorithm')
-parser.add_argument('-dgreedy', action="store", dest="dgreedy", type=int, help='Add this flag to use a deep tree search greedy algorithm')
+parser.add_argument('-dgreedy', action="store", dest="dgreedy", nargs=2, type=int, help="Add this flag to use a deep tree search greedy algorithm. The first argument is the layers or 'depth' the greedy algorithm will search, and the second argument is the 'skim' or the top n branch moves the algorithm should search further")
+parser.add_argument('-naive', default=False, const="defaultmodel", dest="naive_modelname", nargs="?", help='This flag uses the naive bayes classifier to play tetris')
 
 if __name__ == '__main__':
 	args = parser.parse_args()

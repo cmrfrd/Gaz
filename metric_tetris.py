@@ -53,6 +53,7 @@ if __name__ == "__main__":
 	parser.add_argument(action="store_false", default=False, dest="screen")
 	parser.add_argument('-r', action="store", default=0, type=int, dest="records_num", help='Add -r and the number of records to record all gameplays.')
 	parser.add_argument('-knn', default=False, const="defaultmodel", dest="knn_modelname", nargs="?", help='Add this flag and a modelname to use KNN. If no model is provided "defaultmodel" will be used ')
+	parser.add_argument('-naive', default=False, const="defaultmodel", dest="naive_modelname", nargs="?", help='This flag uses the naive bayes classifier to play tetris')
 	parser.add_argument('-greedy', action="store_true", default=False, dest="greedy", help='Add this flag to use a greedy algorithm. Default is True')
 	parser.add_argument('-dgreedy', action="store", dest="dgreedy", type=int, help='Add this flag to use a deep tree search greedy algorithm')
 	parser.add_argument("-players", action="store", dest="batch_size", type=int, default=1, help="The number of games (python interpreters) running together")

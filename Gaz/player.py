@@ -5,6 +5,7 @@ from tetris_infastructure import Board
 from KNN import KNN
 from greedy import greedy
 from deep_greedy import deep_greedy
+from naive import naive
 
 class no_brain(object):
 	def __init__(self):
@@ -19,12 +20,14 @@ class player(Thread):
 		self.app = app
 		self.player_brain = no_brain()
 
-		if kwargs["knn_modelname"]:
-			self.player_brain = KNN(kwargs["knn_modelname"])
+		if kwargs["naive_modelname"]:
+			self.player_brain = naive(kwargs["naive_modelname"])
 		elif kwargs["greedy"]:
 			self.player_brain = greedy()
-		elif isinstance(kwargs["dgreedy"], int):
-			self.player_brain = deep_greedy(kwargs["dgreedy"])
+		elif kwargs["knn_modelname"]:
+			self.player_brain = KNN(kwargs["knn_modelname"])
+		elif kwargs["dgreedy"]:
+			self.player_brain = deep_greedy(*kwargs["dgreedy"])
 
 	def execute_move(self, move, time=0.01):
 		'''executes move based on tuple (x_coord, rotations)
