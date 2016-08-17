@@ -49,10 +49,14 @@ Currently there are 2 ways to use Tetris with Gaz.
     By running ```python tetris.py -gaz -greedy``` Gaz will automatically starty playing using her simple greedy algorithm. You can always switch out
     of "Auto" mode by pressing ```LEFT SHIFT```.
 
-    Currently the options you have are ...
+    By running ```python tetris.py -gaz -degreedy 0 3``` Gaz with use a deep greedy algorithm. '0' is the depth, and '3' is the top_n skimmed moves off of each layer. Keep the depth at either 0,1,2 because the branching factor in tetris is to big and advanced pruning methods need to be used to reduce the number of moves to search through. 
+
+    A good deep greedy setting in ```python tetris.py -gaz -degreedy 2 2```.
+
+    The two other usages are ```python tetris.py -gaz -naive semihumanmodel``` and ```python tetris.py -gaz -knn``` which use naive bayes and K nearest neighbors respectively. They don't work too well but if you ca build a model that will make them work then please give me that model so I can analyze your gameplay to see what magic dust you have
     
     **Advanced Usage:**
     
     By running ```python metric_tetris.py``` you can have Gaz play multiple games at once over many games, build summaries, and eventually will learn and get better at playing tetris.
 
-    To build DataSets and Models edit ```build_model.py``` to save and build models.
+    To build DataSets and Models edit ```build_model.py``` script to save and build models. Check ```Gaz/game_reader.py``` for the code that builds models. 
