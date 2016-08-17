@@ -6,7 +6,7 @@ Gaz is a plug and play system where you provide a brain for her to play tetris.S
 Tetris has **always** been an addiction of mine. I decided to eradicate this obsession by "solving" it so I'll never want to play it again. In case no one gets the [reference](http://zim.wikia.com/wiki/Gaz_Membrane). 
 
 ###Prerequisites
-The only dependency for this repo is ```[pygame](http://www.pygame.org/wiki/GettingStarted)``` and ```[matplotlib](http://matplotlib.org/faq/installing_faq.html)``` if you want to see pretty graphs.
+The only dependency for this repo is [pygame](http://www.pygame.org/wiki/GettingStarted) and [matplotlib](http://matplotlib.org/faq/installing_faq.html) if you want to see pretty graphs.
 
 ###Installing
 
@@ -53,7 +53,7 @@ Currently there are 2 ways to use Tetris with Gaz.
 
     A good deep greedy setting in ```python tetris.py -gaz -degreedy 2 2```.
 
-    The two other usages are ```python tetris.py -gaz -naive semihumanmodel``` and ```python tetris.py -gaz -knn``` which use naive bayes and K nearest neighbors respectively. They don't work too well but if you ca build a model that will make them work then please give me that model so I can analyze your gameplay to see what magic dust you have
+    The two other usages are ```python tetris.py -gaz -naive semihumanmodel``` and ```python tetris.py -gaz -knn``` which use naive bayes and K nearest neighbors respectively. They don't work too well but if you ca build a model that will make them work then please give me that model so I can analyze your gameplay to see what magic dust you have.
     
     **Advanced Usage:**
     
