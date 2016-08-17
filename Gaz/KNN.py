@@ -21,7 +21,7 @@ def k_nearest_neighbors(k, dataset, model_choice, new_vect):
 	#get all the distances away from a given new_vect
 	distances = []
 	index = 0
-	for classification, feature_val_list in dataset[model_choice].iteritems():
+	for classification, feature_val_list in dataset[model_choice]["features"].iteritems():
 		for feature_dict in feature_val_list:
 			distances.append( 
 				(classification, 
@@ -38,7 +38,7 @@ def k_nearest_neighbors(k, dataset, model_choice, new_vect):
 	return most_common
 
 class KNN(object):
-	def __init__(self, modelname, k=50, time_const=0.01):
+	def __init__(self, modelname, k=5, time_const=0.01):
 		self.reader = game_reader()
 		self.model = self.reader.read_model(modelname)
 		self.k = k
@@ -47,8 +47,7 @@ class KNN(object):
 	def get_next_move(self, board, piece):
 		'''classify a new move based on kNN in dataset. Assume all data normalized
 		'''
-
-		current_state_vector = self.reader.feature_dict_from_board( board ).values()
+		current_state_vector = board.get_feature_dict().values()
 		model_choice = get_piece_index(piece)
 		sleep(self.time)
 		

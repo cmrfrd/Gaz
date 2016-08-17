@@ -3,18 +3,30 @@ from os.path import abspath, dirname, realpath
 import csv
 import json
 import ast
-import pickle
+import cPickle
+import base64
 import datetime
-from math import sqrt
+from math import sqrt, exp, pi
 from collections import Counter, OrderedDict
+
+
 from tetris_infastructure import Board, tetris_shapes
 
 gameplay_dir = "/gameplays/"
 model_dir = "/models/"
 
-'''
-Game reader will read games and product "dataset" object
-'''
+
+def avg(list_num):
+	return sum(list_num) / float(len(list_num))
+
+def std(list_num):
+	average = avg(list_num)
+	variance = sum( [(x-average) ** 2 for x in list_num] ) / float(len(list_num))
+	return sqrt(variance)
+
+def probobility(num, mean, stdev):
+	exponent = exp(-( ((x-mean) **2) / (2*(stdev ** 2))))
+	return (1 / (sqrt(2*pi) * stdev)) * exponent
 
 def feature_scale(feature, f_max=None, f_min=None):
 	'''feature scale a single value given a max and min
@@ -37,10 +49,16 @@ class DataSet(OrderedDict):
 	Designated Structure:
 	{
 	  'model_1':{
-	    'classification_1':[
-	      [feature_vector_1],
-	      ...
-	    ],
+	    'classification_1':{
+	      'summary':{
+	        'avg':[69],
+		'std':[6.9]
+	      },
+	      'feature_vectors':[
+	        {feature_vector_1},
+	        ...
+	      ]
+	    }
 	    ...
 	  },
 	  ...
@@ -49,6 +67,13 @@ class DataSet(OrderedDict):
 
 	def __init__(self, *args, **kwargs):
 		super(DataSet, self).__init__(*args, **kwargs)
+		
+	def num_vectors(self):
+		vectors = 0
+		for m,mval in self.iteritems():
+			for c,v in mval.iteritems():
+				vectors += len(v["feature_vectors"])
+		return vectors
 
 	def get_model(self, model):
 		return self.get_dict(model)
@@ -76,35 +101,19 @@ class DataSet(OrderedDict):
 
 class game_reader(object):
 	def __init__(self, gameplay_dir=gameplay_dir):
-
 	    self.current_filepath = dirname(realpath(__file__))
             self.gameplay_files = [file for file in glob.glob(self.current_filepath + gameplay_dir + "*.csv")]
 
 	    self.dataset = DataSet()
 
-        def feature_dict_from_board(self, board_list):
-            '''returns a long vector of features from a board
-            '''
-            board = Board(board_list)
-            board.calc_data()
-            
-            #feature_dict = OrderedDict(board.__dict__)
-	    #feature_dict = OrderedDict({
-	    #		    'full_rows':board.full_rows,
-	    #		    'spaces':board.total_spaces,
-	    #		    'max':board.max
-	    #		    })
-            feature_dict = OrderedDict(
-		    dict(
-			    ('col'+str(i), c.height) for i,c in enumerate(board)
-		    ))
-            return feature_dict
+	def set_game_filepath(self, path):
+            self.gameplay_files = [file for file in glob.glob(self.current_filepath + gameplay_dir + path + "*.csv")]
 
 	def read_model(self, model_name):
             '''Read a model from a file
             '''
             with open(self.current_filepath + model_dir + model_name  + ".pickle", "r+") as model_file:
-		    self.dataset = pickle.load(model_file)
+		    self.dataset = cPickle.load(model_file)
 		    return self.dataset
 
 	def save_model(self, model_name=None):
@@ -112,13 +121,15 @@ class game_reader(object):
             '''
             
             if model_name == None:
-                filename = datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") + '-' + str(len(self.dataset))
+                filename = datetime.datetime.now().strftime("%Y-%m-%d|%H:%M:%S") \
+		           + '-' \
+		           + str(len(self.dataset))
 		
 	    with open(self.current_filepath + model_dir + model_name + ".pickle", "wb+") as model_file:
-		    pickle.dump(self.dataset, model_file)
+		    cPickle.dump(self.dataset, model_file)
 		    model_file.close()
 		
-	def read_games(self, num_games=1):
+	def read_games(self, num_games=1, trim=5):
 		'''Read in 'n' games and build the dataset from those csv games
 		'''
 		assert 1 <= num_games <= len(self.gameplay_files)
@@ -128,18 +139,30 @@ class game_reader(object):
 				break
 
                         #open game for delimitation. Ignore first entry
-			moves = csv.reader(open(game_file,'rb'), delimiter=":", quoting=csv.QUOTE_NONE)
+			moves = csv.reader(open(game_file,'rb').readlines()[:-trim], 
+					   delimiter=":", 
+					   quoting=csv.QUOTE_NONE)
 			moves.next()
 
-			#iterate through each move and create dict dataset based on information
 			for index, move in enumerate(moves):
                                 #look at csv data to see ordering of information
 				model = ast.literal_eval(move[1])[1]
 				classification = (ast.literal_eval(move[0]), ast.literal_eval(move[2]))
-				features = self.feature_dict_from_board(zip(*ast.literal_eval(move[3])))
+				features = Board(zip(*ast.literal_eval(move[3]))).get_feature_dict()
 
-				self.dataset.get_model(model).add_classification_value(classification, features)
-	
+				self.dataset.get_model(model)
+				self.dataset[model].get_dict(classification)
+				self.dataset[model][classification].get_list('feature_vectors').append(features)	
+		return self.dataset
+
+	def create_summaries(self):
+		'''Create std, and avg summeries in "summary" key in model
+		'''
+		for model_key, model in self.dataset.iteritems():
+			for classification, classification_value in model.iteritems():
+				for index, feature in enumerate(zip(*[v.values() for v in classification_value['feature_vectors']])):
+					classification_value.get_dict("summary").get_list("avg").append(avg(feature))
+					classification_value.get_dict("summary").get_list("std").append(std(feature))
 		return self.dataset
 
 	def feature_scale_data(self):

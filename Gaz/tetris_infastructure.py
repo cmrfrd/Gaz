@@ -1,3 +1,6 @@
+from collections import Counter, OrderedDict
+from itertools import groupby
+
 tetris_shapes = [
         [[1, 1, 1],
          [0, 1, 0]],
@@ -95,7 +98,6 @@ def get_piece_rotation(shape):
         else:
             original_shape = rotate_clockwise(original_shape)
 
-
 def get_all_moves(board, piece):
     for rotation_index, rotated_piece in enumerate(get_rotations(piece)):
         for slice_index, slice_board in board.slice_iter(len(zip(*rotated_piece))):
@@ -117,6 +119,8 @@ class Row(list):
     def __init__(self, row):
         list.__init__(self, row)
         self.is_full = all(row)
+        self.spaces = self.count(0)
+        self.divisions = len([group for group in groupby(self, lambda s:s!=1) if group[0]])
 
 class Column(list):
     '''Column object is just a list with some analytic structure ontop
@@ -126,9 +130,6 @@ class Column(list):
         self.height_gap = False
         self.height = False
         self.spaces = False
-
-    def __eq__(self, other_col_list):
-        return self == other_col_list
 
     def remove_space(self, index):
         '''delete index and add 0 at end. represents the 'clearing' of a line
@@ -179,7 +180,34 @@ class Board(list):
     def invert(self):
         '''return just a new list in "row" format
         '''        
-        return [list(row) for row in zip(*self)]
+        return [Row(list(row)) for row in zip(*self)]
+
+    def get_feature_dict(self):
+        '''returns a long dict of features from a board
+        '''
+        self.calc_data()
+        
+        feature_dict = OrderedDict()
+        
+        #default given features of a board
+        feature_dict["max"] = self.max
+        feature_dict["min"] = self.min
+        feature_dict["avg"] = self.average
+        feature_dict["mode"] = self.mode
+        feature_dict["spaces"] = self.total_spaces
+        feature_dict["rows"] = self.full_rows
+        feature_dict["completeness"] = self.row_completeness
+        
+        #add the heights of each column
+        for i,c in enumerate(self):
+            feature_dict["col"+str(i)] = c.height
+        
+        #add row information
+        for i,r in enumerate(self.invert()):
+            feature_dict["row"+str(i)+"_spaces"] = r.spaces
+            feature_dict["row"+str(i)+"_divisions"] = r.divisions
+
+        return feature_dict
 	
     def calc_data(self, update=False):		
 
