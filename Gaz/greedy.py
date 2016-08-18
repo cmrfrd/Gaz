@@ -39,25 +39,23 @@ def bad_score_6(board):
 class greedy(object):
     '''greedy implements a greedy algorithm
     '''
-    def __init__(self, time_const=0.01):
+    def __init__(self, time_const=0.0):
         self.score_func = score_1
         self.time_const = time_const
 
     def get_next_move(self, board, piece):
         '''get all possible moves, score them, get the max
         '''
-        scores = {}
+        best_move = None
+        best_score = 0
 
         for move in get_all_moves(board, piece):
 
-                board_move = move["board"].calc_data(True)
-
-                total_score = self.score_func(board_move)
-
-                scores[total_score] = (move["slice"]["index"], 
-                                       get_piece_rotation(move["rotation"]["piece"]))
-
-        best_move = scores[max(scores.keys())]
+            board_move = move["board"].calc_data(True)
+            total_score = self.score_func(board_move) 
+            if total_score >= best_score:
+                best_move = (move["slice"]["index"], get_piece_rotation(move["rotation"]["piece"]))
+                best_score = total_score
 
         sleep(self.time_const)
 

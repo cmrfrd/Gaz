@@ -46,7 +46,7 @@ def check_collision(board, shape, offset):
     for cy, row in enumerate(shape):
         for cx, cell in enumerate(row):
             try:
-                if cell and board[ cy + off_y ][ cx + off_x ]:
+                if cell and board[ cx + off_x ][ cy + off_y ]:
                     return True
             except IndexError:
                 return True
@@ -58,7 +58,7 @@ def join_matrixes(mat1, mat2, mat2_off):
     off_x, off_y = mat2_off
     for cy, row in enumerate(mat2):
         for cx, val in enumerate(row):
-            mat1[cy+off_y-1 ][cx+off_x] += val
+            mat1[cx + off_x][cy + off_y - 1] += val
     return mat1
 
 def get_piece_index(shape):
@@ -101,6 +101,7 @@ def get_piece_rotation(shape):
 def get_all_moves(board, piece):
     for rotation_index, rotated_piece in enumerate(get_rotations(piece)):
         for slice_index, slice_board in board.slice_iter(len(zip(*rotated_piece))):
+            
             yield {
                 "board":board.fake_add(slice_index, rotated_piece),
                 "rotation":{
@@ -112,7 +113,6 @@ def get_all_moves(board, piece):
                     "board":slice_board
                     }
                 }
-
 class Row(list):
     '''Just a list object that will be expanded upon
     '''
@@ -176,11 +176,13 @@ class Board(list):
         self.total_spaces = False
         self.full_rows = False
         self.row_completeness = False
+        self.inverted_board = self.invert()
 
     def invert(self):
         '''return just a new list in "row" format
-        '''        
-        return [Row(list(row)) for row in zip(*self)]
+        '''  
+        self.inverted_board = [Row(list(row)) for row in zip(*self)]
+        return self.inverted_board
 
     def get_feature_dict(self):
         '''returns a long dict of features from a board
@@ -203,7 +205,7 @@ class Board(list):
             feature_dict["col"+str(i)] = c.height
         
         #add row information
-        for i,r in enumerate(self.invert()):
+        for i,r in enumerate(self.inverted_board):
             feature_dict["row"+str(i)+"_spaces"] = r.spaces
             feature_dict["row"+str(i)+"_divisions"] = r.divisions
 
@@ -217,7 +219,7 @@ class Board(list):
             self.full_rows = 1
             self.row_completeness = 1
 
-            row_board = self.invert()
+            row_board = self.inverted_board
 
             if len(row_board[0]) == cols:
 
@@ -278,13 +280,13 @@ class Board(list):
     def fake_add(self, x, piece):
         '''returns board object with piece "insta_dropped" at an x 
         '''
-        row_board = self.invert()	
+        row_board = self
             
         assert x in [0] + range(len(self) - len(zip(*piece)) + 1), "X not within bounds"
         
         #start from top down, once there is a collision, add and return new board
-        for y in range(1, len(row_board)):
-            if check_collision(row_board, piece, (x, y)):	
+        for y in range(1, len(row_board[0])):
+            if check_collision(row_board, piece, (x, y)):
                 row_board_with_piece = join_matrixes(row_board, piece, (x, y))	
                 return Board(zip(*row_board_with_piece))
         raise Exception("NO COLLISIONS DETECTED")
