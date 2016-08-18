@@ -7,8 +7,11 @@ from time import sleep
 def probobility(num, mean, stdev):
     '''gaussian function
     '''
-    exponent = exp(-( ((num-mean) **2) / (2*(stdev ** 2))))
-    return log( (1 / (sqrt(2*pi) * stdev)) * exponent )
+    try:
+        exponent = exp(-( ((num-mean) **2) / (2*(stdev ** 2))))
+        return log( (1 / (sqrt(2*pi) * stdev)) * exponent )
+    except:
+        return 0
 
 def probobility_of_move(dataset, model_choice, new_vect):
     '''calculate probobilities of classifications seen in model
@@ -34,7 +37,7 @@ class naive(object):
     '''implementation of naive bayes algorithm
     '''
 
-    def __init__(self, modelname, time_const=2):
+    def __init__(self, modelname, time_const=0):
         self.reader = game_reader()
         self.model = self.reader.read_model(modelname)
         self.time = time_const
