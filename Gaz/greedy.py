@@ -46,18 +46,12 @@ class greedy(object):
     def get_next_move(self, board, piece):
         '''get all possible moves, score them, get the max
         '''
-        scores = {}
+        moves = get_all_moves(board, piece)
 
-        for move in get_all_moves(board, piece):
+        best_move = max(moves, key=lambda m:self.score_func(m["board"].calc_data(True)))
 
-                board_move = move["board"].calc_data(True)
-
-                total_score = self.score_func(board_move)
-
-                scores[total_score] = (move["slice"]["index"], 
-                                       get_piece_rotation(move["rotation"]["piece"]))
-
-        best_move = scores[max(scores.keys())]
+        best_move = (best_move["slice"]["index"], 
+                      get_piece_rotation(best_move["rotation"]["piece"]))
 
         sleep(self.time_const)
 

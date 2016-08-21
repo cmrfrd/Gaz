@@ -9,12 +9,10 @@ import datetime
 from math import sqrt, exp, pi
 from collections import Counter, OrderedDict
 
-
 from tetris_infastructure import Board, tetris_shapes
 
 gameplay_dir = "/gameplays/"
 model_dir = "/models/"
-
 
 def avg(list_num):
 	return sum(list_num) / float(len(list_num))
