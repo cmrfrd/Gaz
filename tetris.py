@@ -8,6 +8,7 @@
 #     Return - Instant drfrom random import randrange as rand
 import pygame, sys
 from threading import Event
+import threading
 from random import randrange as rand
 from copy import deepcopy
 import datetime
@@ -98,22 +99,14 @@ def new_board():
 class TetrisApp(object):
 
 	def __init__(self, start_auto=False, screen=True, record=False, **kwargs):
-		pygame.init()
-		pygame.key.set_repeat(250,25)
+
+		if screen:
+			self.init_gui()
 
 		self.width = cell_size*(cols+6)
 		self.height = cell_size*rows
 		self.rlim = cell_size*cols
 		self.bground_grid = [[ 8 if x%2==y%2 else 0 for x in xrange(cols)] for y in xrange(rows)]
-		
-		self.default_font =  pygame.font.Font(
-			pygame.font.get_default_font(), 12)
-
-		pygame.event.set_blocked(pygame.MOUSEMOTION) # We do not need
-		                                             # mouse movement
-		                                             # events, so we
-		                                             # block them.
-
 
 		#set screen if flag is provided
 		self.screen = pygame.display.set_mode((self.width, self.height)) if screen else None
@@ -138,6 +131,12 @@ class TetrisApp(object):
 		#flips 'auto' event to start in auto mode
 		if start_auto:
 			self.flip_auto()		
+
+	def init_gui(self):
+		pygame.init()
+		pygame.key.set_repeat(250,25)
+		self.default_font = pygame.font.Font(pygame.font.get_default_font(), 12)
+		pygame.event.set_blocked(pygame.MOUSEMOTION) #we do not need
 
 	def get_piece_index(self, shape):
 		'''
@@ -419,7 +418,7 @@ Press space to continue""" % self.score)
 								
 				dont_burn_my_cpu.tick(maxfps)
 
-		elif not self.screen:
+		else:
 			self.auto.set()
 			while 1:
 				if self.gameover:

@@ -58,7 +58,7 @@ def join_matrixes(mat1, mat2, mat2_off):
     off_x, off_y = mat2_off
     for cy, row in enumerate(mat2):
         for cx, val in enumerate(row):
-            mat1[cy+off_y-1 ][cx+off_x] += val
+            mat1[cy+off_y-1][cx+off_x] += val
     return mat1
 
 def get_piece_index(shape):
@@ -102,7 +102,7 @@ def get_all_moves(board, piece):
     for rotation_index, rotated_piece in enumerate(get_rotations(piece)):
         for slice_index, slice_board in board.slice_iter(len(zip(*rotated_piece))):
             yield {
-                "board":board.fake_add(slice_index, rotated_piece),
+                "board":board.calc_data(True).fake_add(slice_index, rotated_piece),
                 "rotation":{
                     "index":rotation_index,
                     "piece":rotated_piece
@@ -176,11 +176,7 @@ class Board(list):
         self.total_spaces = False
         self.full_rows = False
         self.row_completeness = False
-
-    def invert(self):
-        '''return just a new list in "row" format
-        '''        
-        return [Row(list(row)) for row in zip(*self)]
+        self.inverted = False
 
     def get_feature_dict(self):
         '''returns a long dict of features from a board
@@ -199,17 +195,25 @@ class Board(list):
         feature_dict["completeness"] = self.row_completeness
         
         #add the heights of each column
-        for i,c in enumerate(self):
-            feature_dict["col"+str(i)] = c.height
+        #for i,c in enumerate(self):
+        #    feature_dict["col"+str(i)] = c.height
         
         #add row information
-        for i,r in enumerate(self.invert()):
-            feature_dict["row"+str(i)+"_spaces"] = r.spaces
-            feature_dict["row"+str(i)+"_divisions"] = r.divisions
+        #for i,r in enumerate(self.invert()):
+        #    feature_dict["row"+str(i)+"_spaces"] = r.spaces
+        #    feature_dict["row"+str(i)+"_divisions"] = r.divisions
 
         return feature_dict
+
+    def invert(self):
+        '''return just a new list in "row" format
+        '''        
+        return [Row(list(row)) for row in zip(*self)]
 	
     def calc_data(self, update=False):		
+
+        if not self.inverted or update:
+            self.inverted = self.invert()
 
         if not self.full_rows or self.row_completeness or update:
 
@@ -217,7 +221,7 @@ class Board(list):
             self.full_rows = 1
             self.row_completeness = 1
 
-            row_board = self.invert()
+            row_board = self.inverted
 
             if len(row_board[0]) == cols:
 
@@ -263,10 +267,6 @@ class Board(list):
         print "Rows: %d" % (self.full_rows)
         print '\n'
 
-    def calc_col_data(self):
-        for col in self:
-            col.calc_data(True)
-
     def slice_iter(self, width):
         '''iterator that returns a "slice" of a board and its index
         '''
@@ -278,13 +278,13 @@ class Board(list):
     def fake_add(self, x, piece):
         '''returns board object with piece "insta_dropped" at an x 
         '''
-        row_board = self.invert()	
-            
+        row_board = self.inverted
+        
         assert x in [0] + range(len(self) - len(zip(*piece)) + 1), "X not within bounds"
         
         #start from top down, once there is a collision, add and return new board
         for y in range(1, len(row_board)):
-            if check_collision(row_board, piece, (x, y)):	
-                row_board_with_piece = join_matrixes(row_board, piece, (x, y))	
+            if check_collision(row_board, piece, (x, y)):
+                row_board_with_piece = join_matrixes(row_board, piece, (x, y))
                 return Board(zip(*row_board_with_piece))
         raise Exception("NO COLLISIONS DETECTED")
