@@ -42,8 +42,10 @@ def feature_scale_list(features, f_max=None, f_min=None):
 
 
 class DataSet(OrderedDict):
-	'''Special dictionary that contains models with classifications that contain feature vectors
-
+	'''
+	Special dictionary that contains models with 
+	classifications that contain feature vectors
+	
 	Designated Structure:
 	{
 	  'model_1':{
@@ -62,25 +64,16 @@ class DataSet(OrderedDict):
 	  ...
 	}
 	'''
-
-	def __init__(self, *args, **kwargs):
+	
+	def __init__(self, label=None, *args, **kwargs):
 		super(DataSet, self).__init__(*args, **kwargs)
-		
-	def num_vectors(self):
-		vectors = 0
-		for m,mval in self.iteritems():
-			for c,v in mval.iteritems():
-				vectors += len(v["feature_vectors"])
-		return vectors
+		self.label = label
 
-	def get_model(self, model):
-		return self.get_dict(model)
-
-	def add_classification_value(self, classification, feature_dict):
-		self.get_list(classification).append(feature_dict)
-
-        def get_list(self, key):
-		'''get list from key, if list doesn't exist
+        def _get_list(self, key):
+		'''
+		provided a key, try to access a value with
+		that key. If the value for the key doesn't
+		exist, create a list for that key
 		'''
 		try:
 			return self[key]
@@ -88,14 +81,63 @@ class DataSet(OrderedDict):
 		       	self[key] = []
 		return self[key]
 
-	def get_dict(self, key):
-		'''get dict from key. if key doesn't exist, return make new DataSet
+	def _get_dict(self, key, label=None):
+		'''
+		provided a key and a label try to access a
+		value with that key. If they value doesn't
+		exist, create a new dataset with that label
 		'''
 		try:
 			return self[key]
 		except KeyError, AttributeError:
-		       	self[key] = DataSet()
+		       	self[key] = DataSet(label)
 		return self[key]
+
+	@staticmethod
+	def add_vector_dict(model, classification, vector):
+		'''
+		provided a model, classification, and vector
+		add the vector to the classification list in
+		the model
+		'''
+		self.get_classification_from_model(model, classification) \
+		    .append(vector)
+
+	def iter_all_vectors(self):
+		'''
+		given self is a dataset, iterate through all 
+		the vectors of all the classes of all the models
+		'''
+		for model_key, model in self.iteritems():
+			for dict_vect in model.iter_class_vectors():
+				yield dict_vect
+
+	def iter_class_vectors(self):
+		'''
+		given that self is a model, iterate through 
+		the vectors 
+		'''
+		assert self.label == "model", "self is not a model"
+
+		for classification_key, classification in self.iteritems():
+			for dict_vect in classification:
+				yield dict_vect
+
+	def add_vector_dict(self, classification, vector):
+		'''
+		given self is a model, and provided a
+		classification and a vector, add the
+		vector to the classification list
+		'''
+		assert self.label == "classification", "self is not a classification"
+
+		self._get_list(classification).append(vector)
+
+	def get_model(self, model):
+		'''given self is a dataset, get a model
+		'''
+		return self._get_dict(model, "model")
+
 
 class game_reader(object):
 	def __init__(self, gameplay_dir=gameplay_dir):
