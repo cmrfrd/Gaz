@@ -29,7 +29,7 @@ class player(object):
         elif kwargs["dgreedy"]:
             self.player_brain = deep_greedy(*kwargs["dgreedy"])
 
-    def execute_move(self, move, time=0.01):
+    def execute_move(self, move, time=0.0):
         '''executes move based on tuple (x_coord, rotations)
         '''
         assert move[0] in range(len(self.app.board)),"X coord not in range of board"
@@ -63,7 +63,7 @@ class player(object):
                 player_pieces_processed += 1
                 continue
 
-            #Create new board and piece object for player to injest
+            #Create new board and piece object for player to ingest
 
             board = Board(zip(*self.app.board))
             piece = self.app.piece

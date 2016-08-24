@@ -134,7 +134,7 @@ class TetrisApp(object):
     
     def initialize_gui(self):
         pygame.init()
-        pygame.key.set_repeat(250,25)
+        pygame.key.set_repeat(250, 25)
         self.default_font =  pygame.font.Font(pygame.font.get_default_font(), 12)
         pygame.event.set_blocked(pygame.MOUSEMOTION) # We do not need
 
