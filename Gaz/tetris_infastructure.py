@@ -102,7 +102,7 @@ def get_all_moves(board, piece):
     for rotation_index, rotated_piece in enumerate(get_rotations(piece)):
         for slice_index, slice_board in board.slice_iter(len(zip(*rotated_piece))):
             yield {
-                "board":board.calc_data(True).fake_add(slice_index, rotated_piece),
+                "board":Board(board).calc_data(True).fake_add(slice_index, rotated_piece),
                 "rotation":{
                     "index":rotation_index,
                     "piece":rotated_piece
@@ -193,15 +193,6 @@ class Board(list):
         feature_dict["spaces"] = self.total_spaces
         feature_dict["rows"] = self.full_rows
         feature_dict["completeness"] = self.row_completeness
-        
-        #add the heights of each column
-        #for i,c in enumerate(self):
-        #    feature_dict["col"+str(i)] = c.height
-        
-        #add row information
-        #for i,r in enumerate(self.invert()):
-        #    feature_dict["row"+str(i)+"_spaces"] = r.spaces
-        #    feature_dict["row"+str(i)+"_divisions"] = r.divisions
 
         return feature_dict
 
@@ -210,7 +201,7 @@ class Board(list):
         '''        
         return [Row(list(row)) for row in zip(*self)]
 	
-    def calc_data(self, update=False):		
+    def calc_data(self, update=False):
 
         if not self.inverted or update:
             self.inverted = self.invert()
@@ -278,11 +269,10 @@ class Board(list):
     def fake_add(self, x, piece):
         '''returns board object with piece "insta_dropped" at an x 
         '''
-        row_board = self.inverted
+        row_board = self.invert()
         
-        assert x in [0] + range(len(self) - len(zip(*piece)) + 1), "X not within bounds"
-        
-        #start from top down, once there is a collision, add and return new board
+        assert x in range(len(self) - len(zip(*piece)) + 1), "X not within bounds"
+
         for y in range(1, len(row_board)):
             if check_collision(row_board, piece, (x, y)):
                 row_board_with_piece = join_matrixes(row_board, piece, (x, y))

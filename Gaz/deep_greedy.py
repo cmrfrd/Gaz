@@ -24,8 +24,7 @@ class deep_greedy(object):
         self.depth = depth
         self.top_n = top_n
 
-
-    def retrieve_move(self, move):
+    def get_move_tuple(self, move):
         '''returns a move tuple from a move dict object
         '''
         return (move["slice"]["index"], 
@@ -36,7 +35,7 @@ class deep_greedy(object):
         '''
         scores = {}
         for move in get_all_moves(board, piece):
-            end_move = self.retrieve_move(move)
+            end_move = self.get_move_tuple(move)
             score = self.score_func(move["board"].calc_data())
             scores[score] = move
         
@@ -54,7 +53,7 @@ class deep_greedy(object):
             for move in self.top_n_moves(board, future_piece, self.top_n):
                 total_score += self.get_branch_scores(
                                    layers - 1,
-                                   move["board"].calc_data(),
+                                   move["board"],
                                    total_score,
                                    top_n
                                )
@@ -68,9 +67,9 @@ class deep_greedy(object):
         for move in self.top_n_moves(board, piece, self.top_n):
             score = self.get_branch_scores(      
                           self.depth,
-                          move["board"].calc_data(),
+                          move["board"],
                           top_n=self.top_n
-                     )
+                    )
             branch_scores[score] = (move["slice"]["index"], 
                                    get_piece_rotation(move["rotation"]["piece"]))
         

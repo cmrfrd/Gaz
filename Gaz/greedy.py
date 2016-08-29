@@ -40,7 +40,7 @@ class greedy(object):
     '''greedy implements a greedy algorithm
     '''
     def __init__(self, time_const=0.01):
-        self.score_func = no_spaces
+        self.score_func = score_1
         self.time_const = time_const
 
     def get_next_move(self, board, piece):

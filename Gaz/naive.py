@@ -18,26 +18,23 @@ def probobility_of_move(dataset, model_choice, new_vect):
     '''
     model = dataset.get_model(model_choice)
     probobilities = {}
-    
-    for classification, feature_value in model.iteritems():
+
+    for class_key, classification in model.iter_classes(with_key=True):
         prob = 1
         for feature_index in range(len(new_vect)):
-            mean = feature_value["summary"]["avg"][feature_index]
-            std = feature_value["summary"]["std"][feature_index]
+            mean = classification.get_classification_summary("avg")[feature_index]
+            std = classification.get_classification_summary("std")[feature_index]
             num = new_vect[feature_index]
 
-            if std == 0:continue
             prob *= probobility(num, mean, std)
-        else:
-            probobilities[prob] = classification
-
+        probobilities[prob] = class_key
     return probobilities            
 
 class naive(object):
     '''implementation of naive bayes algorithm
     '''
 
-    def __init__(self, modelname, time_const=0):
+    def __init__(self, modelname, time_const=0.01):
         self.reader = game_reader()
         self.model = self.reader.read_model(modelname)
         self.time = time_const
@@ -47,7 +44,6 @@ class naive(object):
         '''    
         feature_vector = board.get_feature_dict().values()
         model_index = get_piece_index(piece)
-
         probobilities = probobility_of_move(self.model, model_index, feature_vector)
 
         sleep(self.time)

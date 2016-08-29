@@ -14,31 +14,27 @@ def euclidian_distance(v1, v2):
 	return sqrt(distance)
 
 def k_nearest_neighbors(k, dataset, model_choice, new_vect):
-	'''classify a new move based on kNN in dataset. Assume all data normalized
 	'''
-	by_dist = lambda item:item[1]
+	provided 'k', a dataset, and a new vector, get the top
+	'k' distances by euclidian distance. Then classify the
+	vector by the most 'votes' by top 'k' distances and the
+	points
+	'''
+	model = dataset.get_model(model_choice)
 
-	#get all the distances away from a given new_vect
 	distances = []
-	index = 0
-	for classification, feature_val_list in dataset[model_choice]["features"].iteritems():
-		for feature_dict in feature_val_list:
-			distances.append( 
-				(classification, 
-				 euclidian_distance( 
-						feature_dict.values(), 
-						new_vect ) ) )
-		index += 1
-	#get the shortest 'k' distances for classification
-	top_k_distances = [d[0] for d in sorted(distances, key=by_dist)[:k]]
-	
-	#get the most common classification and return to user
+	for class_key, classification in model.iter_classes(with_key=True):
+		for feature_vector in classification.iter_vectors():
+			distance = euclidian_distance(feature_vector.values(), new_vect)
+			distances.append((class_key, distance))
+
+	top_k_distances = [d[0] for d in sorted(distances, key=lambda item:item[1])[:k]]
 	most_common = Counter(top_k_distances).most_common(1)[0][0]
 
 	return most_common
 
 class KNN(object):
-	def __init__(self, modelname, k=5, time_const=0.01):
+	def __init__(self, modelname, k=20, time_const=0.01):
 		self.reader = game_reader()
 		self.model = self.reader.read_model(modelname)
 		self.k = k
