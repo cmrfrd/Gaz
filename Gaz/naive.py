@@ -39,7 +39,7 @@ class naive(object):
         self.model = self.reader.read_model(modelname)
         self.time = time_const
 
-    def get_next_move(self, board, piece):
+    def get_next_move(self, board, piece, piece_number):
         '''Use naive bayes algorithm to calculate classification of next move
         '''    
         feature_vector = board.get_feature_dict().values()

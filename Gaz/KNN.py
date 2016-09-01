@@ -40,7 +40,7 @@ class KNN(object):
 		self.k = k
 		self.time = time_const
 	
-	def get_next_move(self, board, piece):
+	def get_next_move(self, board, piece, piece_number):
 		'''classify a new move based on kNN in dataset. Assume all data normalized
 		'''
 		current_state_vector = board.get_feature_dict().values()

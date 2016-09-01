@@ -59,7 +59,7 @@ class deep_greedy(object):
                                )
         return total_score
 
-    def get_next_move(self, board, piece):
+    def get_next_move(self, board, piece, piece_number):
         '''Given a depth greedy search a tree
         '''
         branch_scores = {}

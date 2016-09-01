@@ -66,7 +66,7 @@ class player(Thread):
 			board = Board(zip(*self.app.board))
 			piece = self.app.piece
 
-			move = self.player_brain.get_next_move(board, piece)
+			move = self.player_brain.get_next_move(board, piece, int(player_pieces_processed))
 
 			if self.execute_move(move):
 				player_pieces_processed += 1

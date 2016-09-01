@@ -43,7 +43,7 @@ class greedy(object):
         self.score_func = score_1
         self.time_const = time_const
 
-    def get_next_move(self, board, piece):
+    def get_next_move(self, board, piece, piece_number):
         '''get all possible moves, score them, get the max
         '''
         moves = get_all_moves(board, piece)
