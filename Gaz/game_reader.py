@@ -330,3 +330,35 @@ class game_reader(object):
 					scaled_vector_dict = dict(zip(feature_keys, scaled_vector))
 					classification.add_vector_dict(scaled_vector_dict)		
 		return self.dataset
+
+	def train_weight_vector(self, num_games=1, trim=5):
+	    assert 1 <= num_games <= len(self.gameplay_files)
+
+	    from boltz import boltz
+	    bol = boltz("test")
+
+	    for index, game_file in enumerate(self.gameplay_files[:num_games]):
+
+                game = open(game_file,'rb').readlines()[:-trim]
+		moves = csv.reader(game, **self.csv_reader_settings)
+
+		cpiece, cboard = self.get_board_piece(moves.next())
+		for index, move in enumerate(moves):
+			fpiece, fboard = self.get_board_piece(move)
+			bol.get_next_move(cboard, cpiece, index+1)
+			
+			bol.update_weights(0.1, index+1, bol.weights, cboard, cpiece, fboard)
+
+			cpiece, cboard = fpiece, fboard
+
+	    print bol.weights
+
+	    return self.dataset
+
+	def get_board_piece(self, move):
+            '''Provided a move from a csv, return the piece and the board
+	    '''
+	    piece = ast.literal_eval(move[1])[0]
+	    board = Board(zip(*ast.literal_eval(move[3])))
+
+	    return piece, board

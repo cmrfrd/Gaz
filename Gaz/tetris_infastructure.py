@@ -187,12 +187,17 @@ class Board(list):
         
         #default given features of a board
         feature_dict["max"] = self.max
-        feature_dict["min"] = self.min
-        feature_dict["avg"] = self.average
-        feature_dict["mode"] = self.mode
+        #feature_dict["min"] = self.min
+        #feature_dict["avg"] = self.average
+        #feature_dict["mode"] = self.mode
         feature_dict["spaces"] = self.total_spaces
         feature_dict["rows"] = self.full_rows
-        feature_dict["completeness"] = self.row_completeness
+        #feature_dict["completeness"] = self.row_completeness
+
+        for index in range(1, len(self)):
+            feature_dict["col"+str(index)+"diff"] = abs(len(self[index-1]) - len(self[index]))
+        for index, col in enumerate(self):
+            feature_dict["col"+str(index)] = col.height
 
         return feature_dict
 

@@ -10,7 +10,7 @@ from naive import naive
 class no_brain(object):
 	def __init__(self):
 		pass
-	def get_next_move(self, board, piece):
+	def get_next_move(self, board, piece, processed):
 		raise NotImplementedError("No brain has been provided to Gaz")
 
 class player(Thread):
@@ -28,6 +28,8 @@ class player(Thread):
 			self.player_brain = KNN(kwargs["knn_modelname"])
 		elif kwargs["dgreedy"]:
 			self.player_brain = deep_greedy(*kwargs["dgreedy"])
+		else:
+			self.player_brain = no_brain()
 
 	def execute_move(self, move, time=0.01):
 		'''executes move based on tuple (x_coord, rotations)
