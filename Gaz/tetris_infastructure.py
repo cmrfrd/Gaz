@@ -195,11 +195,23 @@ class Board(list):
         #feature_dict["completeness"] = self.row_completeness
 
         for index in range(1, len(self)):
-            feature_dict["col"+str(index)+"diff"] = abs(len(self[index-1]) - len(self[index]))
+            feature_dict["col"+str(index)+"diff"] = abs(self[index-1].height - self[index].height)
         for index, col in enumerate(self):
             feature_dict["col"+str(index)] = col.height
 
-        return feature_dict
+        return self.normal_dict(feature_dict)
+
+    def normal_dict(self, d):
+        '''|'''
+        d['max'] = d['max'] / 20.0
+        d['spaces'] = d['spaces'] / 200.0
+        d['rows'] = d['rows'] / 4.0
+        for index in range(1, len(self)):
+            d["col"+str(index)+"diff"] = abs(self[index-1].height - self[index].height) / 20.0
+        for index, col in enumerate(self):
+            d["col"+str(index)] = col.height / 20.0
+
+        return d
 
     def invert(self):
         '''return just a new list in "row" format

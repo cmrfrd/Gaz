@@ -6,6 +6,6 @@ reader = game_reader("semihuman/")
 #reader.create_summaries()
 #reader.save_model("colinfomodel")
 
-reader.train_weight_vector(11)
+reader.train_weight_vector(1)
 
 

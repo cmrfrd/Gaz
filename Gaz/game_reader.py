@@ -341,15 +341,13 @@ class game_reader(object):
 
                 game = open(game_file,'rb').readlines()[:-trim]
 		moves = csv.reader(game, **self.csv_reader_settings)
+		moves = list(moves)
 
-		cpiece, cboard = self.get_board_piece(moves.next())
-		for index, move in enumerate(moves):
+		cpiece, cboard = self.get_board_piece(moves[0])
+		for index, move in enumerate(moves[1:]):
 			fpiece, fboard = self.get_board_piece(move)
 			bol.train(cboard, cpiece, index, fboard, fpiece)
 
-			print "Height diff"
-			print cboard.max - fboard.max
-			
 			print "Current"
 			for r in cboard:print r
 			print "Future"
@@ -358,6 +356,7 @@ class game_reader(object):
 			cpiece, cboard = fpiece, fboard
 
 			print bol.weights
+			#raw_input()
 
 	    return self.dataset
 
@@ -366,5 +365,4 @@ class game_reader(object):
 	    '''
 	    piece = ast.literal_eval(move[1])[0]
 	    board = Board(zip(*ast.literal_eval(move[3])))
-
 	    return piece, board

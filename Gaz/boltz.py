@@ -9,7 +9,7 @@ def dot(A, B):
     '''
     if len(A) != len(B):
         return 0
-    return sum(i[0] * i[1] for i in zip(A, B))
+    return sum(float(i[0]) * i[1] for i in zip(A, B))
 
 def Q(weights, state):
     '''
@@ -74,28 +74,41 @@ def q(weights, current_state, future_state, piece):
     '''
     num = l(weights, future_state)
     denom = Z(weights, current_state, piece)
-    #print "Num..."
-    #print num
-    #print "Denom..."
-    #print denom
+    print "quality..."
+    print num
+    print denom
+    print num/denom
+
+    print future_state
+    for future_move in get_all_moves(current_state, piece):
+        future_vector = future_move["board"].get_feature_dict().values()
+        if future_vector == future_state:
+            print future_vector
+
+    assert((num/denom)>=0)
+    assert((num/denom)<=1)
     return num / denom
 
 def grad_q(weights, current_state, future_state, piece):
     '''
     '''
-    #print "Calling grad_q..."
+    print "Calling grad_q..."
     #print "WEIGHTS..."
     #print weights
     #print "FUTURE VECTOR..."
-    future_state = [float(i)/sum(future_state) for i in future_state]
+    #future_state = [float(i)/sum(future_state) for i in future_state]
     #print future_state
+    
     a = (-1.0)*l(weights, future_state)
     b = Z(weights, current_state, piece) ** 2
     c = (a/b)
     first = [c*i for i in grad_Z(weights, current_state, piece)]
 
     d = Z(weights, current_state, piece)
-    last = [i/d for i in grad_l(weights, future_state)]
+    last = [i/float(d) for i in grad_l(weights, future_state)]
+
+    print "grad_q..."
+    print [sum(c) for c in zip(first, last)]
 
     return [sum(c) for c in zip(first, last)]
 
@@ -118,7 +131,6 @@ def score_ratio(weights, current_state, future_state, piece):
 
     return [i/float(a) for i in g_q]
 
-
 class boltz(object):
     '''implementation of boltzman distribution with gradient descent
     '''
@@ -136,8 +148,8 @@ class boltz(object):
         a = [i*beta for i in self.z]
         b = score_ratio(weights, current_state, chosen_future_state, piece)
         self.z = [sum(c) for c in zip(a, b)]
-        #print "Z..."
-        #print self.z
+        print "z..."
+        print self.z
 
         return self.z
 
@@ -149,7 +161,10 @@ class boltz(object):
         #print current_state.full_rows
         #reward = chosen_future_state["rows"] - current_state.full_rows        
         reward = current_state.max - chosen_future_state["max"]
-        reward = reward if reward > 0 else 0
+        reward = reward if reward > 0 else 1
+
+        print reward
+
         z = self.update_z(*z_args)
 
         zr = [i*reward for i in z]
@@ -176,8 +191,8 @@ class boltz(object):
         the vector weights by theta = theta + alpha*delta
         '''
         delta = self.update_delta(beta, piece_number, weights, current_state, piece, chosen_future_state)
-        #print "Delta..."
-        #print delta
+        print "Delta..."
+        print delta
         
         delta_alpha = [alpha * i for i in delta]
         self.weights = [self.weights[i] + delta_alpha[i] for i,j in enumerate(delta_alpha)]
@@ -191,7 +206,7 @@ class boltz(object):
                 self.delta = [0 for i in range(len(board.get_feature_dict().values()))]
             if self.weights == None:
                 #from random import random
-                self.weights = [0.3938439425213127, 0.9248802355033771, 0.806102380561386, 0.9446723836979689, 0.09598423791518995, 0.4565333434732859, 0.8160532400625534, 0.9409700478556629, 0.6083545667384487, 0.7394608825703828, 0.9953775686793932, 0.6621016602492431, 0.43813586866144144, 0.45469614774792283, 0.2315824576352137, 0.036567088558053476, 0.5171251507648578, 0.8288560821640759, 0.29841593008265405, 0.5735537888623539, 0.15155775591377313, 0.5193517149697681]
+                self.weights = [-6.972988005626286, -0.020006240467911964, -0.01043888166236461, -0.1542055196093272, -0.9691387470733887, -1.41186411342795, -1.0251165642981068, -1.3243355833487855, -1.0972287489572317, -1.887972513711374, -1.0009040006185181, 0.19012803587242647, -0.4964566199636361, -2.2045536787683284, -2.479350024636267, -2.305543293214648, -1.7516964814585965, -1.6565620876636407, -2.5447265673123916, -2.1056599083056464, -2.2526206869502867, -1.9441180621960652]
                 #self.weights = [random() for i in range(len(board.get_feature_dict().values()))]
 
     def get_next_move(self, board, piece, piece_number):
@@ -201,14 +216,17 @@ class boltz(object):
         '''    
         self.init_vectors(board)
 
-        moves = get_all_moves(board, piece)
+        moves = list(get_all_moves(board, piece))
 
-        best_move = moves.next()
-        for m in moves:
-            if Q(self.weights, best_move["board"].calc_data(True)) < Q(self.weights, m["board"].calc_data(True)):
+        best_move = moves[0]
+        for m in moves[1:]:
+            if Q(self.weights, best_move["board"].calc_data(True).get_feature_dict().values()) < Q(self.weights, m["board"].calc_data(True).get_feature_dict().values()):
                 best_move = m
 
-        self.update_weights(0.1, 0.5, piece_number, self.weights, board, piece, best_move["board"].get_feature_dict())
+        print "Quality"
+        print [Q(self.weights, m["board"].calc_data(True)) for m in moves]
+
+        self.update_weights(0.01, 0.5, piece_number, self.weights, board, piece, best_move["board"].get_feature_dict())
         print "Updating Weights..."
         print self.weights
         sleep(self.time)
