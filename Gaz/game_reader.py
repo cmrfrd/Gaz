@@ -345,13 +345,19 @@ class game_reader(object):
 		cpiece, cboard = self.get_board_piece(moves.next())
 		for index, move in enumerate(moves):
 			fpiece, fboard = self.get_board_piece(move)
-			bol.get_next_move(cboard, cpiece, index+1)
+			bol.train(cboard, cpiece, index, fboard, fpiece)
+
+			print "Height diff"
+			print cboard.max - fboard.max
 			
-			bol.update_weights(0.1, index+1, bol.weights, cboard, cpiece, fboard)
+			print "Current"
+			for r in cboard:print r
+			print "Future"
+			for r in fboard:print r
 
 			cpiece, cboard = fpiece, fboard
 
-	    print bol.weights
+			print bol.weights
 
 	    return self.dataset
 
