@@ -18,6 +18,7 @@ from os.path import abspath, dirname, realpath
 import argparse
 
 from Gaz import player
+from Gaz.tetris_infastructure import Board
 
 
 game_filepath = "/Gaz/gameplays/" 
@@ -25,7 +26,7 @@ game_filepath = "/Gaz/gameplays/"
 # The configuration
 cell_size =	19
 cols =		10
-rows =		22
+rows =		20
 maxfps = 	30
 
 colors = [
@@ -132,6 +133,8 @@ class TetrisApp(object):
 		if start_auto:
 			self.flip_auto()		
 
+		self.loop = kwargs["loop"]
+
 	def init_gui(self):
 		pygame.init()
 		pygame.key.set_repeat(250,25)
@@ -236,14 +239,6 @@ class TetrisApp(object):
 				self.piece_x = new_x
 
 	def quit(self):
-		
-		#shut down process when game quits
-		self.player.shutdown()
-
-		if self.screen:
-			self.center_msg("Exiting...")		
-			pygame.display.update()
-
 		#if the record flag is set, record the gameplay
 		if self.record or self.record == "":
 			filepath = dirname(realpath(__file__)) + game_filepath
@@ -262,7 +257,20 @@ class TetrisApp(object):
 				for play in self.record_list:
 					csv_file_writer.writerow(play)
 				print "WTITING TO FILE"
+		
+		if self.loop > 0:
+			self.loop -= 1
+			self.start_game()
+			return None
+			
+		#shut down process when game quits
+		self.player.shutdown()
 
+		if self.screen:
+			self.center_msg("Exiting...")		
+			pygame.display.update()
+
+		
 		print "%d" % (self.pieces_processed)
 		sys.exit()
 	
@@ -360,8 +368,7 @@ class TetrisApp(object):
 				if self.gameover:
 					self.center_msg("""Game Over!\nYour score: %d
 Press space to continue""" % self.score)
-					#self.quit()
-					return self.pieces_processed
+					self.quit()
 				else:
 					if self.paused:
 						self.center_msg("Paused")
@@ -422,8 +429,8 @@ Press space to continue""" % self.score)
 			self.auto.set()
 			while 1:
 				if self.gameover:
-					#self.quit()					
-					return self.pieces_processed			
+					self.quit()					
+					#return self.pieces_processed			
 				for event in pygame.event.get():
 					if event.type == pygame.USEREVENT+1:
 						self.drop(False)
@@ -445,10 +452,13 @@ parser.add_argument('-knn', default=False, const="defaultmodel", dest="knn_model
 parser.add_argument('-greedy', action="store_true", default=False, dest="greedy", help='Add this flag to use a greedy algorithm')
 parser.add_argument('-dgreedy', action="store", dest="dgreedy", nargs=2, type=int, help="Add this flag to use a deep tree search greedy algorithm. The first argument is the layers or 'depth' the greedy algorithm will search, and the second argument is the 'skim' or the top n branch moves the algorithm should search further")
 parser.add_argument('-naive', default=False, const="defaultmodel", dest="naive_modelname", nargs="?", help='This flag uses the naive bayes classifier to play tetris')
+parser.add_argument('-boltz', action="store_true", default=False, dest="boltz", help='boltz is a brain type that will play tetris')
+parser.add_argument('-loop', default=1, dest="loop", action="store", type=int, help="How many loops you want the game to run for")
 
 if __name__ == '__main__':
 	args = parser.parse_args()
+	kwargs = dict(args._get_kwargs())
 
-	App = TetrisApp(**dict(args._get_kwargs()))
+	App = TetrisApp(**kwargs)
 	App.run()
 	App.quit()

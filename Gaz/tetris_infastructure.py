@@ -268,7 +268,9 @@ class Board(list):
         '''
         assert 1 <= width <= len(self), "Width not within bounds of board"
         
+        a =[]
         for col in range(0, len(self) - width + 1):
+            a.append(col)
             yield (col, Board(self[col:col+width][:]))
             
     def fake_add(self, x, piece):
