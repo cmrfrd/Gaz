@@ -1,5 +1,5 @@
 import glob
-from os.path import abspath, dirname, realpath
+from os.path import abspath, dirname, realpath, join
 import csv
 import json
 import ast
@@ -337,14 +337,14 @@ class game_reader(object):
 	    from boltz import boltz
 	    bol = boltz("test")
 
-	    for index, game_file in enumerate(self.gameplay_files[:num_games]):
+	    for index, game_file in enumerate(self.gameplay_files):
 
                 game = open(game_file,'rb').readlines()[:-trim]
 		moves = csv.reader(game, **self.csv_reader_settings)
 		moves = list(moves)
 
 		cpiece, cboard = self.get_board_piece(moves[0])
-		for index, move in enumerate(moves[1:]):
+		for index, move in enumerate(moves[4:]):
 			fpiece, fboard = self.get_board_piece(move)
 			bol.train(cboard, cpiece, index, fboard, fpiece)
 
@@ -366,3 +366,36 @@ class game_reader(object):
 	    piece = ast.literal_eval(move[1])[0]
 	    board = Board(zip(*ast.literal_eval(move[3])))
 	    return piece, board
+
+class boltz_model_reader(object):
+	'''
+	Class dedicated to reading/saving
+	models generated from boltz training
+	'''
+	def __init__(self):
+		self.dir_path = join(model_dir, "boltz")
+		self.weights = None
+		self.G = None
+
+	def read_model(self, file_path):
+		'''provided a modelname, load the pickled file into a dataset
+		'''
+		path = current_filepath + model_dir + file_path  + ".pickle"
+		with open(path, "rb+") as model_file:
+			self.dataset = cPickle.load(model_file)
+			return self.dataset
+
+	def save_model(self, file_path=None):
+		'''
+		provided a model_name, save dataset to a pickle 
+		file for reloading, else use a generated filename
+		by date
+		'''
+		if file_path == None:
+			file_path = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+		file_path += '-'
+		file_path += str(len(self.dataset))
+
+		path = current_filepath + model_dir + file_path + ".pickle"
+		with open(path, "wb+") as model_file:
+			cPickle.dump(self.dataset, model_file)

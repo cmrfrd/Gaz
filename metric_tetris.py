@@ -8,7 +8,6 @@ import argparse
 
 import tetris
 
-
 def graph(all_lifetimes):
 	plt.figure(figsize=(12, 9))  
 	
@@ -28,6 +27,7 @@ def graph(all_lifetimes):
 	plt.hist(all_lifetimes,  
         	 color="#3F5D7D", bins=100)  
 
+	plt.savefig("test_graph")
 	plt.show()
 
 def tetris_player_process(a, i, **kwargs):
@@ -55,9 +55,12 @@ if __name__ == "__main__":
 	parser.add_argument('-knn', default=False, const="defaultmodel", dest="knn_modelname", nargs="?", help='Add this flag and a modelname to use KNN. If no model is provided "defaultmodel" will be used ')
 	parser.add_argument('-naive', default=False, const="defaultmodel", dest="naive_modelname", nargs="?", help='This flag uses the naive bayes classifier to play tetris')
 	parser.add_argument('-greedy', action="store_true", default=False, dest="greedy", help='Add this flag to use a greedy algorithm. Default is True')
+	parser.add_argument('-boltz', action="store_true", default=False, dest="boltz", help='Add this flag to use boltz algo')
 	parser.add_argument('-dgreedy', action="store", dest="dgreedy", type=int, help='Add this flag to use a deep tree search greedy algorithm')
 	parser.add_argument("-players", action="store", dest="batch_size", type=int, default=1, help="The number of games (python interpreters) running together")
 	parser.add_argument("-games", action="store", dest="jobs", type=int, default=1, help="number of total games being played")
+	parser.add_argument('-loop', default=0, dest="loop", action="store", type=int, help="How many loops you want to do")
+	parser.add_argument('-train', action="store_true", default=False, dest="train", help='Use this flag in conjunction with gaz to train models')
 
 	args = parser.parse_args()
 	dict_args = dict(args._get_kwargs())
@@ -67,12 +70,12 @@ if __name__ == "__main__":
 	jobs = args.jobs
 	lifetimes = mult.Array('i', [0]*jobs)
 
-	check_records(dict_args, jobs)
+	check_records(dict_args, -1)
 	print dict_args
 
 	#create initial batch
 	for index in range(args.batch_size):
-		check_records(dict_args, jobs)
+		check_records(dict_args, -1)
 		if jobs > 0:
 			job = mult.Process(target=tetris_player_process, args=(lifetimes, jobs-1), kwargs=dict_args)
 			job.start()
@@ -86,8 +89,9 @@ if __name__ == "__main__":
 		a_job_is_dead = False in job_status
 		if a_job_is_dead and jobs > 0:
 			print "Job finished, %d jobs left" % (jobs)
+			#print list(lifetimes)
 
-			check_records(dict_args, jobs)
+			check_records(dict_args, -1)
 			finished_job_index = job_status.index(False)
 
 			jobs_list[finished_job_index].join()
@@ -96,4 +100,5 @@ if __name__ == "__main__":
 
 			jobs -= 1
 		sleep(0.5)
-	graph(lifetimes)
+	print list(lifetimes)
+	graph(list(lifetimes))

@@ -102,7 +102,7 @@ def get_all_moves(board, piece):
     for rotation_index, rotated_piece in enumerate(get_rotations(piece)):
         for slice_index, slice_board in board.slice_iter(len(zip(*rotated_piece))):
             yield {
-                "board":Board(board).calc_data(True).fake_add(slice_index, rotated_piece),
+                "board":Board(board).calc_data(True).fake_add(slice_index, rotated_piece).calc_data(True),
                 "rotation":{
                     "index":rotation_index,
                     "piece":rotated_piece
@@ -198,13 +198,14 @@ class Board(list):
             feature_dict["col"+str(index)+"diff"] = abs(self[index-1].height - self[index].height)
         for index, col in enumerate(self):
             feature_dict["col"+str(index)] = col.height
+        #for index, col in enumerate(self):
+        #    feature_dict["col"+str(index)+"spaces"] = col.spaces
 
         return self.normal_dict(feature_dict)
 
     def normal_dict(self, d):
-        '''|'''
         d['max'] = d['max'] / 20.0
-        d['spaces'] = d['spaces'] / 200.0
+        d['spaces'] = d['spaces']+1 / 200.0
         d['rows'] = d['rows'] / 4.0
         for index in range(1, len(self)):
             d["col"+str(index)+"diff"] = abs(self[index-1].height - self[index].height) / 20.0

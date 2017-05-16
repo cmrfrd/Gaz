@@ -118,7 +118,6 @@ class TetrisApp(object):
 		self.pieces_processed = 0
 		self.rotation = 0
 
-
 		#initialize the game and important values
 		self.next_piece = tetris_shapes[rand(len(tetris_shapes))]
 		self.init_game()
@@ -172,7 +171,8 @@ class TetrisApp(object):
 		self.new_piece()
 		self.level = 1
 		self.score = 0
-		self.lines = 0
+		self.lines = 1
+		self.pieces_processed = 0
 		pygame.time.set_timer(pygame.USEREVENT+1, 1000)
 	
 	def disp_msg(self, msg, topleft):
@@ -260,6 +260,7 @@ class TetrisApp(object):
 		
 		if self.loop > 0:
 			self.loop -= 1
+			print "Pieces: %d"%self.pieces_processed
 			self.start_game()
 			return None
 			
@@ -429,18 +430,18 @@ Press space to continue""" % self.score)
 			self.auto.set()
 			while 1:
 				if self.gameover:
-					self.quit()					
-					#return self.pieces_processed			
-				for event in pygame.event.get():
-					if event.type == pygame.USEREVENT+1:
-						self.drop(False)
-					elif event.type == pygame.QUIT:
-						self.quit()
-					elif event.type == pygame.KEYDOWN:
-						for key in key_actions:
-							if event.key == eval("pygame.K_"
-							+key) and (key == "ESCAPE"):
-								key_actions[key]()
+					#self.quit()					
+					return self.pieces_processed			
+				#for event in pygame.event.get():
+				#	if event.type == pygame.USEREVENT+1:
+				#		self.drop(False)
+				#	elif event.type == pygame.QUIT:
+				#		self.quit()
+				#	elif event.type == pygame.KEYDOWN:
+				#		for key in key_actions:
+				#			if event.key == eval("pygame.K_"
+				#			+key) and (key == "ESCAPE"):
+				#				key_actions[key]()
 				dont_burn_my_cpu.tick(maxfps)
 
 parser = argparse.ArgumentParser(description='Plays tetris')
@@ -453,7 +454,8 @@ parser.add_argument('-greedy', action="store_true", default=False, dest="greedy"
 parser.add_argument('-dgreedy', action="store", dest="dgreedy", nargs=2, type=int, help="Add this flag to use a deep tree search greedy algorithm. The first argument is the layers or 'depth' the greedy algorithm will search, and the second argument is the 'skim' or the top n branch moves the algorithm should search further")
 parser.add_argument('-naive', default=False, const="defaultmodel", dest="naive_modelname", nargs="?", help='This flag uses the naive bayes classifier to play tetris')
 parser.add_argument('-boltz', action="store_true", default=False, dest="boltz", help='boltz is a brain type that will play tetris')
-parser.add_argument('-loop', default=1, dest="loop", action="store", type=int, help="How many loops you want the game to run for")
+parser.add_argument('-loop', default=0, dest="loop", action="store", type=int, help="How many loops you want the game to run for")
+parser.add_argument('-train', action="store_true", default=False, dest="train", help='Use this flag in conjunction with gaz to train models')
 
 if __name__ == '__main__':
 	args = parser.parse_args()

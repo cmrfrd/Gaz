@@ -30,7 +30,7 @@ class player(Thread):
 		elif kwargs["dgreedy"]:
 			self.player_brain = deep_greedy(*kwargs["dgreedy"])
 		elif kwargs["boltz"]:
-			self.player_brain = boltz("test")
+			self.player_brain = boltz(kwargs["train"])
 		else:
 			self.player_brain = no_brain()
 
