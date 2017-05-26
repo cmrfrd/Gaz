@@ -335,29 +335,36 @@ class game_reader(object):
 	    assert 1 <= num_games <= len(self.gameplay_files)
 
 	    from boltz import boltz
-	    bol = boltz("test")
+	    bol = boltz("covar_model", train=True)
+
+	    print "Training boltz model...%s"%bol
 
 	    for index, game_file in enumerate(self.gameplay_files):
+		    game = open(game_file,'rb').readlines()[:-trim]
+		    moves = csv.reader(game, **self.csv_reader_settings)
+		    moves = list(moves)
 
-                game = open(game_file,'rb').readlines()[:-trim]
-		moves = csv.reader(game, **self.csv_reader_settings)
-		moves = list(moves)
+		    cpiece, cboard = self.get_board_piece(moves[0])
+		    for index, move in enumerate(moves[4:]):
+			    try:
+				    fpiece, fboard = self.get_board_piece(move)
+				    bol.input_train(cboard, cpiece, index, fboard, fpiece)
 
-		cpiece, cboard = self.get_board_piece(moves[0])
-		for index, move in enumerate(moves[4:]):
-			fpiece, fboard = self.get_board_piece(move)
-			bol.train(cboard, cpiece, index, fboard, fpiece)
+			            #print "Current"
+			            #for r in cboard:print r
+				    #print "Future"
+			            #for r in fboard:print r
 
-			print "Current"
-			for r in cboard:print r
-			print "Future"
-			for r in fboard:print r
+				    cpiece, cboard = fpiece, fboard
 
-			cpiece, cboard = fpiece, fboard
-
-			print bol.weights
-			#raw_input()
-
+				    print bol.weights
+			    except Exception, e:
+				    print "Error in training..."
+				    import traceback
+				    traceback.print_exc()
+				    print e
+				    pass
+	    bol.reader.save_model("covar")
 	    return self.dataset
 
 	def get_board_piece(self, move):
@@ -372,30 +379,58 @@ class boltz_model_reader(object):
 	Class dedicated to reading/saving
 	models generated from boltz training
 	'''
-	def __init__(self):
-		self.dir_path = join(model_dir, "boltz")
+	def __init__(self, model_name="default"):
+		self.dir_path = join(model_dir, "boltz/")
 		self.weights = None
 		self.G = None
+		self.read_path = None
+		self.model_name = model_name
+			
+	def get_model(self):
+		return self.weights, self.G
 
-	def read_model(self, file_path):
+	def set_model(self, w, g):
+		self.weights = w
+		self.G = g
+		return self
+
+	def read_model(self, filename):
 		'''provided a modelname, load the pickled file into a dataset
 		'''
-		path = current_filepath + model_dir + file_path  + ".pickle"
-		with open(path, "rb+") as model_file:
-			self.dataset = cPickle.load(model_file)
-			return self.dataset
+		path = current_filepath + self.dir_path + filename + ".pickle"
+		self.read_path = path
+		
+		try:
+			with open(path, "rb+") as model_file:
+				w, g = cPickle.load(model_file)
+				self.weights = w
+				self.G = g
+		except IOError, e:
+			print "No model %s exists..."%filename
+			return False
+		return True
 
-	def save_model(self, file_path=None):
+	def save_model(self, filename=None, read=False):
 		'''
 		provided a model_name, save dataset to a pickle 
 		file for reloading, else use a generated filename
 		by date
 		'''
-		if file_path == None:
-			file_path = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
-		file_path += '-'
-		file_path += str(len(self.dataset))
+		if self.G == None or self.weights == None:
+			raise Exception("Model cannot be none")
+		if filename == "":
+			filename = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+			filename += '-'
+			filename += str(sum(self.weights))
+		if filename == None:
+			filename = self.model_name
 
-		path = current_filepath + model_dir + file_path + ".pickle"
+		path = current_filepath + self.dir_path + filename + ".pickle"		
+
+		if read:
+			path = self.read_path
+
 		with open(path, "wb+") as model_file:
-			cPickle.dump(self.dataset, model_file)
+			cPickle.dump((self.weights, self.G), model_file)
+		return self
+	
