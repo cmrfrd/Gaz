@@ -1,8 +1,10 @@
 from tetris_infastructure import get_all_moves, get_piece_index, get_piece_rotation
-from game_reader import game_reader
+from game_reader import boltz_model_reader
+from mathelp import invert, matsub, matadd, matmultconst, matmult, print_matrix
 
 from math import sqrt, exp, pi, log
 from time import sleep
+
 
 def dot(A, B):
     '''Provided 2 lists, return the dot product
@@ -122,8 +124,10 @@ def score_ratio(weights, current_state, future_state, piece):
 class boltz(object):
     '''implementation of boltzman distribution with gradient descent
     '''
-    def __init__(self, train, time_const=0.01):
-        self.reader = game_reader()
+    def __init__(self, model_name, train, time_const=0.001):
+        self.reader = boltz_model_reader(model_name)
+        self.model_name = model_name
+
         self.time = time_const
 
         self.train = train
@@ -131,6 +135,10 @@ class boltz(object):
         self.z = None
         self.delta = None
         self.weights = None
+        self.G = None
+
+    def set_model(self):
+        self.weights, self.G = self.reader.get_model()
 
     def update_z(self, beta, weights, current_state, piece, chosen_future_state):
         a = [i*beta for i in self.z]
@@ -168,24 +176,74 @@ class boltz(object):
         self.delta = [left_term[i] + zrdeltat[i] for i,j in enumerate(zrdeltat)]
         return self.delta
 
+    def update_G(self, piece_number):
+        '''
+        Update covariance matrix. Used to relate variables of vectors with eachother
+        '''
+        zzT = matmult([[i] for i in self.z], [self.z])        
+
+        #print 'zzT...'
+        #print_matrix(zzT, 4)
+
+        right = matsub(zzT, self.G)
+        
+        #print 'New G...'
+        #print_matrix(right, 4)
+
+        time_const = (float(piece_number) / (piece_number+1))
+        right = matmultconst(time_const, right)
+        self.G = matadd(self.G, right)
+        return self.G        
+
     def update_weights(self, alpha, beta, piece_number, weights, current_state, piece, chosen_future_state):
         '''
         Provided an 'nth piece', and appropriate arguments, update
         the vector weights by theta = theta + alpha*delta
         '''
         delta = self.update_delta(beta, piece_number, weights, current_state, piece, chosen_future_state)
+        G = self.update_G(piece_number)
+        invG = invert(G)
+
+        #print "G..."
+        #print_matrix(G, 3)
+
+        #import numpy as np
+        #print "inv G numpy..."
+        #print np.linalg.inv(np.array(G))
+
+        #print "invG..."
+        #print_matrix(invG, 3)
 
         #print "Delta..."
         #print [round(d, 3) for d in delta]
         
-        delta_alpha = [alpha * i for i in delta]
-        self.weights = [self.weights[i] + delta_alpha[i] for i,j in enumerate(delta_alpha)]
+        delta_alpha = [[alpha * i] for i in delta]
+        delta_alpha_G = matmult(G, delta_alpha)
+
+        #print "new weight,  weights"
+        #for i,j in zip(delta_alpha_G, self.weights):print i,j
+        #print
+
+        delta_alpha_G = [i[0] for i in delta_alpha_G]
+
+        self.weights = [self.weights[i] + delta_alpha_G[i] for i,j in enumerate(delta_alpha_G)]
         return self.weights
 
     def init_vectors(self, board):
         if not self.var_init:
-            self.z = [0 for i in range(len(board.get_feature_dict().values()))]
-            self.delta = [0 for i in range(len(board.get_feature_dict().values()))]
+
+            if self.reader.read_model(self.model_name):
+                self.set_model()
+                return True
+
+            vector_len = len(board.get_feature_dict().values())
+
+            self.G = [[0 if j!=i else 0.0000000001 for j in range(vector_len)] for i in range(vector_len)]
+
+            self.z = [0 for i in range(vector_len)]
+
+            self.delta = [0 for i in range(vector_len)]
+
             if self.weights == None:
                 #self.weights = [-31.474400482179206, -2.765251934919666, -6.45010808811692, -5.174819108467723, -6.352852323360011, -8.596575631124415, -7.694439615896075, -8.453052061900113, -8.384371197299263, -9.032709514237311, -6.236766327149332, -4.119020606670995, -2.6667563326503583, -8.714638441159519, -10.229306987705513, -9.82413594493289, -9.508396276324415, -9.31706261721174, -10.285895202897308, -9.807081883576066, -8.250081938684906, -4.1944260367624056]
                 #self.weights = [1 for i in range(len(board.get_feature_dict().values()))]
@@ -197,9 +255,21 @@ class boltz(object):
 
                 #self.weights = [-30.428, -7.937, 14.939, -5.932, -5.094, -7.675, -7.648, -7.025, -6.867, -8.594, -6.98, -5.299, -1.008, -8.88, -12.108, -14.017, -14.153, -13.7, -11.344, -11.384, -9.187, -4.621]
                 
+                # default weights
                 self.weights = [-32.29178297824714, -6.7140081229853905, 18.200657138226614, -6.778002574772368, -5.790389683159439, -8.68421375060278, -8.346073572713749, -7.861747023091065, -8.0660906925999, -9.24834472057468, -8.195854690673256, -6.349681663752939, -0.32702750199408276, -8.807394190879467, -12.489099960565342, -14.393060554942453, -14.712533844808732, -14.10165010877199, -11.562207976242341, -11.313917533207434, -8.827313840895929, -3.801900711144742]
+            
+            self.reader.set_model(self.weights, self.G)
+            self.reader.save_model()                
+            self.var_init = True
 
-
+    def input_train(self, cboard, cpiece, cpiece_number, fboard, fpiece):
+        '''
+        Pass in a state, piece, and piece number to train boltz
+        '''
+        self.init_vectors(cboard)
+        self.update_weights(0.2, 0.5, cpiece_number, self.weights, cboard, cpiece, fboard.get_feature_dict())
+        self.reader.save_model()
+            
     def get_next_move(self, board, piece, piece_number):
         '''
         Using a boltzman distribution, and gradient descent, update
@@ -219,27 +289,23 @@ class boltz(object):
         if self.train:
             try:
                 if piece_number % 20 == 0:
-                    self.update_weights(0.9, 0.5, piece_number, self.weights, board, piece, best_move["board"].get_feature_dict())
+                    self.update_weights(0.9, 0.9, piece_number, self.weights, board, piece, best_move["board"].get_feature_dict())
 
                     print "Updating Weights..."
                     print [w for w in self.weights]
 
+                    self.reader.set_model(self.weights, self.G)
+                    self.reader.save_model(read=True)
                 else:
                     self.update_delta(0.9, piece_number, self.weights, board, piece, best_move["board"].get_feature_dict())
-            except:
+            except Exception, e:
+                print e
                 pass
 
-        #sleep(self.time)
+        sleep(self.time)
 
         # Reshape the best move data into usable
         best_move = (best_move["slice"]["index"], 
                       get_piece_rotation(best_move["rotation"]["piece"]))
 
         return best_move
-
-    def train(self, cboard, cpiece, cpiece_number, fboard, fpiece):
-        '''
-        Pass in a state, piece, and piece number to train boltz
-        '''
-        self.init_vectors(cboard)
-        self.update_weights(0.9, 0.9, cpiece_number, self.weights, cboard, cpiece, fboard.get_feature_dict())
