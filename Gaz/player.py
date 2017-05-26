@@ -30,11 +30,11 @@ class player(Thread):
 		elif kwargs["dgreedy"]:
 			self.player_brain = deep_greedy(*kwargs["dgreedy"])
 		elif kwargs["boltz"]:
-			self.player_brain = boltz(kwargs["train"])
+			self.player_brain = boltz(kwargs["boltz"], kwargs["train"])
 		else:
 			self.player_brain = no_brain()
 
-	def execute_move(self, move, time=0.01):
+	def execute_move(self, move, time=0.0000001):
 		'''executes move based on tuple (x_coord, rotations)
 		'''
 		assert move[0] in range(len(self.app.board)),"X coord not in range of board"
