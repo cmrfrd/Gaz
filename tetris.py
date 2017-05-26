@@ -121,6 +121,7 @@ class TetrisApp(object):
 		#initialize the game and important values
 		self.next_piece = tetris_shapes[rand(len(tetris_shapes))]
 		self.init_game()
+		self.train = kwargs["train"]
 
 		#create the 'auto' event triggered by left shift
 		self.auto = Event()
@@ -222,9 +223,12 @@ class TetrisApp(object):
 		self.score += linescores[n] * self.level
 		if self.lines >= self.level*6:
 			self.level += 1
-			newdelay = 1000-50*(self.level-1)
-			newdelay = 100 if newdelay < 100 else newdelay
-			pygame.time.set_timer(pygame.USEREVENT+1, newdelay)
+			if self.train:
+				pygame.time.set_timer(pygame.USEREVENT+1, 800)
+			else:
+				newdelay = 1000-50*(self.level-1)
+				newdelay = 100 if newdelay < 100 else newdelay
+				pygame.time.set_timer(pygame.USEREVENT+1, newdelay)
 	
 	def move(self, delta_x):
 		if not self.gameover and not self.paused:
@@ -382,9 +386,9 @@ Press space to continue""" % self.score)
 							self.rlim+cell_size,
 							2))
 						self.disp_msg("Score: %d\n\nLevel: %d\
-							\nLines: %d" % (self.score, self.level, self.lines),
+							\nLines: %d\nPieces: %d" % (self.score, self.level, self.lines, self.pieces_processed),
 							(self.rlim+cell_size, cell_size*5))
-
+						
 						if self.auto.is_set():
 							self.disp_msg("Press \n'Left Shift'\nfor Manual\nPlay", (self.rlim + cell_size, cell_size * 10))
 							self.disp_msg("IN AUTO \nMODE", (self.rlim + cell_size, cell_size * 15))
@@ -453,9 +457,10 @@ parser.add_argument('-knn', default=False, const="defaultmodel", dest="knn_model
 parser.add_argument('-greedy', action="store_true", default=False, dest="greedy", help='Add this flag to use a greedy algorithm')
 parser.add_argument('-dgreedy', action="store", dest="dgreedy", nargs=2, type=int, help="Add this flag to use a deep tree search greedy algorithm. The first argument is the layers or 'depth' the greedy algorithm will search, and the second argument is the 'skim' or the top n branch moves the algorithm should search further")
 parser.add_argument('-naive', default=False, const="defaultmodel", dest="naive_modelname", nargs="?", help='This flag uses the naive bayes classifier to play tetris')
-parser.add_argument('-boltz', action="store_true", default=False, dest="boltz", help='boltz is a brain type that will play tetris')
+parser.add_argument('-boltz', default=False, const="test", dest="boltz", nargs="?", help='boltz is a brain type that will play tetris')
 parser.add_argument('-loop', default=0, dest="loop", action="store", type=int, help="How many loops you want the game to run for")
 parser.add_argument('-train', action="store_true", default=False, dest="train", help='Use this flag in conjunction with gaz to train models')
+
 
 if __name__ == '__main__':
 	args = parser.parse_args()
